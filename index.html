@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L2 Universe - Suite Privada de Gestión Lineage 2</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ESTADO NO AUTENTICADO: PANTALLA DE LOGIN PRIVADA Y CENTRADA -->
+    <div id="publicLoginContainer" class="login-screen-container">
+        <div class="login-card card">
+            <div class="login-header">
+                <i class="fa-solid fa-khanda logo-icon"></i>
+                <h1 class="login-title">L2 <span class="text-cyan">UNIVERSE</span></h1>
+                <p class="login-subtitle">Suite Privada de Gestión Lineage 2</p>
+            </div>
+
+            <!-- Botón Principal Google -->
+            <button class="btn btn-google w-100 mb-3" onclick="window.handleGoogleLogin()">
+                <i class="fa-brands fa-google"></i> Continuar con Google
+            </button>
+
+            <!-- Separador -->
+            <div class="login-divider">
+                <span>o ingresa con tu cuenta</span>
+            </div>
+
+            <!-- Pestañas Toggle (Iniciar Sesión / Registrarse) -->
+            <div class="auth-tabs">
+                <button id="tabBtnLogin" class="auth-tab-btn active" onclick="window.switchAuthTab('login')">Iniciar Sesión</button>
+                <button id="tabBtnRegister" class="auth-tab-btn" onclick="window.switchAuthTab('register')">Registrarse</button>
+            </div>
+
+            <!-- Formulario de Autenticación -->
+            <form id="formAuth" class="mt-3">
+                <div class="form-group mb-2">
+                    <label for="authEmail">Correo Electrónico</label>
+                    <input type="email" id="authEmail" class="form-control" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="authPassword">Contraseña</label>
+                    <input type="password" id="authPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="btnAuthSubmit" class="btn btn-primary w-100 mb-2">Ingresar</button>
+            </form>
+
+            <div class="login-footer-links">
+                <a href="#" class="forgot-link" onclick="window.handleForgotPassword(event)">¿Olvidaste tu contraseña?</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTADO AUTENTICADO: NAVBAR Y DASHBOARD PRIVADO -->
+    <div id="privateAppContainer" class="app-container" style="display: none;">
+        
+        <!-- NAVBAR SUPERIOR -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="#" class="brand-logo" onclick="window.navigateTo('dashboard')">
+                    <i class="fa-solid fa-khanda logo-icon"></i>
+                    <span class="brand-text">L2 <span class="text-cyan">UNIVERSE</span></span>
+                </a>
+
+                <!-- Navegación por Pestañas -->
+                <ul class="nav-links">
+                    <li><a href="#" class="nav-link active" data-target="dashboard" onclick="window.navigateTo('dashboard', event)"><i class="fa-solid fa-chart-pie"></i> Home</a></li>
+                    <li><a href="#" class="nav-link" data-target="accounts" onclick="window.navigateTo('accounts', event)"><i class="fa-solid fa-users-gear"></i> Gestión Cuentas</a></li>
+                    <li><a href="#" class="nav-link" data-target="craft" onclick="window.navigateTo('craft', event)"><i class="fa-solid fa-hammer"></i> Calculadora Craft</a></li>
+                    <li><a href="#" class="nav-link" data-target="tracker" onclick="window.navigateTo('tracker', event)"><i class="fa-solid fa-coins"></i> Diario Farmeo</a></li>
+                    <li><a href="#" class="nav-link" data-target="raids" onclick="window.navigateTo('raids', event)"><i class="fa-solid fa-dragon"></i> Base Raids</a></li>
+                </ul>
+
+                <!-- Menú Usuario -->
+                <div class="user-profile-menu">
+                    <img id="userAvatar" src="https://via.placeholder.com/40" alt="Avatar" class="user-avatar">
+                    <span id="userName" class="user-name font-mono">Cargando...</span>
+                    <button class="btn-icon danger" onclick="window.handleLogout()" title="Cerrar Sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO PRINCIPAL (SPA) -->
+        <main class="main-content">
+
+            <!-- SECCIÓN: HOME / DASHBOARD -->
+            <section id="section-dashboard" class="app-section active">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-solid fa-chart-pie text-cyan"></i> Dashboard Principal</h2>
+                        <p>Resumen rápido de actividad y estado general de tus herramientas.</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="welcome-card card border-cyan mb-4">
+                        <div class="welcome-info">
+                            <h3>¡Bienvenido de nuevo, <span id="dashUserName" class="text-cyan">Jugador</span>!</h3>
+                            <p>Tu plataforma de gestión privada está activa y sincronizada en tiempo real.</p>
+                        </div>
+                    </div>
+
+                    <div class="quick-stats-grid">
+                        <div class="stat-card card">
+                            <span class="stat-label"><i class="fa-solid fa-users text-cyan"></i> Cuentas Guardadas</span>
+                            <span id="dashAccountsCount" class="stat-value font-mono">0</span>
+                        </div>
+                        <div class="stat-card card">
+                            <span class="stat-label"><i class="fa-solid fa-list-check text-purple"></i> Proyectos Craft</span>
+                            <span id="dashCraftCount" class="stat-value font-mono">0</span>
+                        </div>
+                        <div class="stat-card card">
+                            <span class="stat-label"><i class="fa-solid fa-coins text-gold"></i> Farmeo Registrado</span>
+                            <span id="dashLogsCount" class="stat-value font-mono">0 Días</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: GESTIÓN DE CUENTAS -->
+            <section id="section-accounts" class="app-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-solid fa-users-gear text-cyan"></i> Gestión de Cuentas y Personajes</h2>
+                        <p>Guarda tus cuentas de forma confidencial encriptadas por tu UID de Firebase.</p>
+                    </div>
+                    <div class="section-actions d-flex gap-2">
+                        <select id="accountServerFilter" class="form-control" onchange="window.triggerAccountRender()">
+                            <option value="ALL">Todos los Servidores</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="document.getElementById('addAccountModal').style.display='flex'">
+                            <i class="fa-solid fa-plus"></i> Nueva Cuenta
+                        </button>
+                    </div>
+                </div>
+
+                <div id="accountsGrid" class="accounts-grid">
+                    <!-- Renderizado dinámico desde accounts-manager.js -->
+                </div>
+            </section>
+
+            <!-- SECCIÓN: CALCULADORA DE CRAFTING -->
+            <section id="section-craft" class="app-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-solid fa-hammer text-cyan"></i> Calculadora de Crafting y Metas</h2>
+                        <p>Selecciona una receta, calcula tus materiales e ingresa tu diario de farmeo.</p>
+                    </div>
+                </div>
+
+                <div class="craft-selector-card card mb-4">
+                    <div class="form-group">
+                        <label for="craftRecipeSelect">Selecciona Receta de Interlude</label>
+                        <select id="craftRecipeSelect" class="form-control">
+                            <!-- Generado por JS -->
+                        </select>
+                    </div>
+                    <div id="recipePreviewContainer" class="recipe-preview-area mt-3">
+                        <p class="text-muted text-center">Selecciona una receta arriba para ver los materiales requeridos.</p>
+                    </div>
+                </div>
+
+                <div class="active-projects-header mb-3">
+                    <h3><i class="fa-solid fa-list-check text-purple"></i> Mis Proyectos de Farm Activos</h3>
+                </div>
+
+                <div id="activeCraftProjects" class="craft-projects-grid">
+                    <!-- Generado dinámicamente -->
+                </div>
+            </section>
+
+            <!-- SECCIÓN: DIARIO DE FARMEO -->
+            <section id="section-tracker" class="app-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-solid fa-coins text-gold"></i> Diario de Farmeo Diario</h2>
+                        <p>Registra tus ingresos por jornada, proyecta metas y analiza tu rendimiento.</p>
+                    </div>
+                </div>
+
+                <div class="tracker-stats-grid mb-4">
+                    <div class="stat-card card">
+                        <span class="stat-label"><i class="fa-solid fa-coins text-gold"></i> Adena Total</span>
+                        <span id="totalAdena" class="stat-value text-gold font-mono">0</span>
+                    </div>
+                    <div class="stat-card card">
+                        <span class="stat-label"><i class="fa-solid fa-gem text-purple"></i> Ancient Adena</span>
+                        <span id="totalAncientAdena" class="stat-value text-purple font-mono">0</span>
+                    </div>
+                    <div class="stat-card card">
+                        <span class="stat-label"><i class="fa-solid fa-circle-dollar-to-slot text-cyan"></i> Donate Coins</span>
+                        <span id="totalDonateCoins" class="stat-value text-cyan font-mono">0</span>
+                    </div>
+                    <div class="stat-card card">
+                        <span class="stat-label"><i class="fa-solid fa-cubes text-green"></i> Seal Stones</span>
+                        <span id="totalSealStones" class="stat-value text-green font-mono">0</span>
+                    </div>
+                </div>
+
+                <div class="tracker-layout-grid">
+                    <div class="tracker-left-col">
+                        <div class="card mb-4">
+                            <h3><i class="fa-solid fa-plus-circle text-cyan"></i> Registrar Farmeo de Hoy</h3>
+                            <form id="formAddFarmLog" class="mt-3">
+                                <div class="form-group mb-2">
+                                    <label>Adena</label>
+                                    <input type="number" id="farmAdena" class="form-control" placeholder="Ej: 15000000" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label>Ancient Adena</label>
+                                    <input type="number" id="farmAncientAdena" class="form-control" placeholder="Ej: 500000" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label>Donate Coins</label>
+                                    <input type="number" id="farmDonateCoins" class="form-control" placeholder="Ej: 10" min="0">
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label>Seal Stones</label>
+                                    <input type="number" id="farmSealStones" class="form-control" placeholder="Ej: 120000" min="0">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fa-solid fa-floppy-disk"></i> Guardar Jornada
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="card">
+                            <h3><i class="fa-solid fa-chart-line text-purple"></i> Proyección de Metas</h3>
+                            <div id="farmProjectionContainer" class="mt-3">
+                                <!-- Generado por JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tracker-right-col">
+                        <div class="card">
+                            <h3><i class="fa-solid fa-list text-cyan"></i> Historial de Jornadas</h3>
+                            <div class="table-responsive mt-3">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Adena</th>
+                                            <th>A. Adena</th>
+                                            <th>Coins</th>
+                                            <th>Stones</th>
+                                            <th class="text-end">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="farmLogsTableBody">
+                                        <!-- Generado por JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: BASE DE RAIDS -->
+            <section id="section-raids" class="app-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-solid fa-dragon text-purple"></i> Base de Datos de Raid Bosses</h2>
+                        <p>Consulta estadísticas, estrategias de combate, ubicaciones y drops principales.</p>
+                    </div>
+                    <div class="section-actions d-flex gap-2">
+                        <input type="text" id="raidSearchInput" class="form-control" placeholder="Buscar por nombre o zona...">
+                        <select id="raidLevelFilter" class="form-control" style="width: 180px;">
+                            <option value="ALL">Todos los Niveles</option>
+                            <option value="70-75">Nivel 70 - 75</option>
+                            <option value="76-80">Nivel 76 - 80</option>
+                            <option value="80+">Nivel 80+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="raidsGrid" class="raids-grid mt-4">
+                    <!-- Generado por JS -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- PIE DE PÁGINA FIX EN LA PARTE INFERIOR -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p class="footer-text">L2 Universe &copy; Suite de herramientas avanzadas para jugadores de Lineage 2.</p>
+            <span class="signature">By PULSER-X</span>
+        </div>
+    </footer>
+
+    <!-- MODAL: NUEVA CUENTA -->
+    <div id="addAccountModal" class="modal-backdrop" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Registrar Cuenta de Juego</h3>
+                <button class="btn-icon" onclick="document.getElementById('addAccountModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formAddAccount">
+                <div class="form-group mb-2">
+                    <label>Servidor</label>
+                    <input type="text" id="accServer" class="form-control" placeholder="Ej: L2 Sudamérica x10" required>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Crónica</label>
+                    <input type="text" id="accChronicle" class="form-control" placeholder="Ej: Interlude / High Five" required>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Usuario / Login ID</label>
+                    <input type="text" id="accUsername" class="form-control" placeholder="Nombre de usuario" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Notas Secretas / Rol de la cuenta</label>
+                    <textarea id="accNotes" class="form-control" placeholder="Ej: Buffers principales, Clave secundaria, etc."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addAccountModal').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cuenta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: AGREGAR PERSONAJE -->
+    <div id="addCharModal" class="modal-backdrop" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Añadir Personaje a la Cuenta</h3>
+                <button class="btn-icon" onclick="document.getElementById('addCharModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formAddChar">
+                <input type="hidden" id="charAccountId">
+                <div class="form-group mb-2">
+                    <label>Nombre del Personaje</label>
+                    <input type="text" id="charName" class="form-control" placeholder="Ej: VarkaKiller" required>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Clase</label>
+                    <input type="text" id="charClass" class="form-control" placeholder="Ej: Treasure Hunter / Bishop" required>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Nivel</label>
+                    <input type="number" id="charLevel" class="form-control" min="1" max="99" value="80" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Equipamiento / Set Principal</label>
+                    <input type="text" id="charGear" class="form-control" placeholder="Ej: Draconic Set +6, Angel Slayer Focus">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addCharModal').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Añadir PJ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS MODULARES -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/accounts-manager.js"></script>
+    <script type="module" src="js/crafting.js"></script>
+    <script type="module" src="js/tracker.js"></script>
+    <script type="module" src="js/raids.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
