@@ -1,83 +1,167 @@
-import { db, auth } from './firebase-config.js';
+import { db } from './firebase-config.js';
 import { 
-    collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp 
+    collection, 
+    addDoc, 
+    onSnapshot, 
+    doc, 
+    deleteDoc, 
+    query, 
+    orderBy, 
+    serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-let trackerUnsubscribe = null;
+let currentUser = null;
 let farmLogs = [];
+let unsubscribeTrackerListener = null;
 
 export function initTrackerManager(user) {
-    if (trackerUnsubscribe) trackerUnsubscribe();
+    currentUser = user;
+    if (unsubscribeTrackerListener) {
+        unsubscribeTrackerListener();
+        unsubscribeTrackerListener = null;
+    }
+
+    setupTrackerFormHandler();
 
     if (!user) {
         farmLogs = [];
-        renderTrackerUI();
+        renderFarmLogs();
+        updateDashboardLogsCount();
         return;
     }
 
     const logsRef = collection(db, 'users', user.uid, 'farm_logs');
-    trackerUnsubscribe = onSnapshot(query(logsRef, orderBy('createdAt', 'desc')), (snapshot) => {
-        farmLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderTrackerUI();
+    const q = query(logsRef, orderBy('createdAt', 'desc'));
+
+    unsubscribeTrackerListener = onSnapshot(q, (snapshot) => {
+        farmLogs = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        renderFarmLogs();
+        updateDashboardLogsCount();
+    }, (error) => {
+        console.error("Error al escuchar registros de farmeo:", error);
     });
 }
 
-export function renderTrackerUI() {
-    renderSummaryStats();
-    renderLogsTable();
-}
+function setupTrackerFormHandler() {
+    const form = document.getElementById('formAddFarmLog');
+    if (!form) return;
 
-function formatNumber(num) {
-    if (!num) return '0';
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        if (!currentUser) {
+            alert("Debes iniciar sesión para guardar registros.");
+            return;
+        }
 
-function renderSummaryStats() {
-    const totalAdena = farmLogs.reduce((acc, curr) => acc + (Number(curr.adena) || 0), 0);
-    const totalAAdena = farmLogs.reduce((acc, curr) => acc + (Number(curr.ancientAdena) || 0), 0);
-    const totalCoins = farmLogs.reduce((acc, curr) => acc + (Number(curr.donateCoins) || 0), 0);
-    const totalStones = farmLogs.reduce((acc, curr) => acc + (Number(curr.sealStones) || 0), 0);
+        const adena = document.getElementById('farmAdena').value.trim();
+        const ancientAdena = document.getElementById('farmAncientAdena').value.trim();
+        const donateCoins = document.getElementById('farmDonateCoins').value.trim();
+        const giantsCodex = document.getElementById('farmGiantsCodex').value.trim();
 
-    if (document.getElementById('totalAdena')) document.getElementById('totalAdena').textContent = formatNumber(totalAdena);
-    if (document.getElementById('totalAncientAdena')) document.getElementById('totalAncientAdena').textContent = formatNumber(totalAAdena);
-    if (document.getElementById('totalDonateCoins')) document.getElementById('totalDonateCoins').textContent = formatNumber(totalCoins);
-    if (document.getElementById('totalSealStones')) document.getElementById('totalSealStones').textContent = formatNumber(totalStones);
-}
+        // Subsecciones
+        const lsType = document.getElementById('lsTypeSelect').value;
+        const lsLevel = document.getElementById('lsLevelSelect').value;
+        const lsQty = document.getElementById('farmLifeStonesQty').value.trim();
+        const lsKey = `${lsType} (${lsLevel})`;
 
-function renderLogsTable() {
-    const tableBody = document.getElementById('farmLogsTableBody');
-    if (!tableBody) return;
+        const scrollVariant = document.getElementById('scrollVariantSelect').value;
+        const scrollCategory = document.getElementById('scrollCategorySelect').value;
+        const scrollGrade = document.getElementById('scrollGradeSelect').value;
+        const scrollQty = document.getElementById('farmScrollsQty').value.trim();
+        const scrollKey = `${scrollVariant} ${scrollCategory} (${scrollGrade})`;
 
-    if (farmLogs.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>';
-        return;
-    }
+        const letter = document.getElementById('letterSelect').value;
+        const lettersQty = document.getElementById('farmLettersQty').value.trim();
 
-    tableBody.innerHTML = farmLogs.map(log => `
-        <tr>
-            <td>${log.date || 'Hoy'}</td>
-            <td class="text-gold font-mono">${formatNumber(log.adena)}</td>
-            <td class="text-purple font-mono">${formatNumber(log.ancientAdena)}</td>
-            <td class="text-cyan font-mono">${formatNumber(log.donateCoins)}</td>
-            <td class="text-green font-mono">${formatNumber(log.sealStones)}</td>
-            <td class="text-end">
-                <button class="btn-icon danger" onclick="window.deleteFarmLog('${log.id}')"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        </tr>
-    `).join('');
-}
+        const heart = document.getElementById('heartSelect').value;
+        const heartsQty = document.getElementById('farmHeartsQty').value.trim();
 
-export async function addFarmLog(logData) {
-    const user = auth.currentUser;
-    if (!user) return alert("Inicia sesión.");
-    await addDoc(collection(db, 'users', user.uid, 'farm_logs'), { ...logData, createdAt: serverTimestamp() });
+        const questItem = document.getElementById('questItemSelect').value;
+        const questQty = document.getElementById('farmQuestItemQty').value.trim();
+
+        const itemsMap = {};
+        if (lsQty && Number(lsQty) > 0) itemsMap[lsKey] = lsQty;
+        if (scrollQty && Number(scrollQty) > 0) itemsMap[scrollKey] = scrollQty;
+        if (lettersQty && Number(lettersQty) > 0) itemsMap[letter] = lettersQty;
+        if (heartsQty && Number(heartsQty) > 0) itemsMap[heart] = heartsQty;
+        if (questQty && Number(questQty) > 0) itemsMap[questItem] = questQty;
+
+        const newLog = {
+            adena: adena || '0',
+            ancientAdena: ancientAdena || '0',
+            donateCoins: donateCoins || '0',
+            giantsCodex: giantsCodex || '0',
+            items: itemsMap,
+            dateStr: new Date().toLocaleDateString(),
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            const logsRef = collection(db, 'users', currentUser.uid, 'farm_logs');
+            await addDoc(logsRef, newLog);
+            form.reset();
+            window.addNotification("✅ Jornada de farmeo guardada con éxito.");
+        } catch (err) {
+            console.error("Error al guardar jornada:", err);
+            alert("Error al guardar en Firebase.");
+        }
+    };
 }
 
 window.deleteFarmLog = async (logId) => {
-    const user = auth.currentUser;
-    if (user && confirm("¿Borrar registro?")) {
-        await deleteDoc(doc(db, 'users', user.uid, 'farm_logs', logId));
+    if (!currentUser) return;
+    if (confirm("¿Estás seguro de eliminar este registro de farmeo?")) {
+        try {
+            const docRef = doc(db, 'users', currentUser.uid, 'farm_logs', logId);
+            await deleteDoc(docRef);
+            window.addNotification("🗑️ Registro eliminado correctamente.");
+        } catch (err) {
+            console.error("Error al eliminar registro:", err);
+        }
     }
 };
+
+export function renderFarmLogs() {
+    const tbody = document.getElementById('farmLogsTableBody');
+    if (!tbody) return;
+
+    if (farmLogs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">No hay registros de farmeo guardados todavía.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = farmLogs.map(log => {
+        const itemsEntries = log.items ? Object.entries(log.items) : [];
+        const itemsFormatted = itemsEntries.length > 0 
+            ? itemsEntries.map(([k, v]) => `<span class="badge badge-purple me-1 mb-1" style="font-size:0.75rem;">${k}: <strong>x${v}</strong></span>`).join('') 
+            : '<span class="text-muted fs-sm">Sin ítems</span>';
+
+        return `
+            <tr>
+                <td class="font-mono text-cyan">${log.dateStr}</td>
+                <td class="font-mono text-gold">${log.adena}</td>
+                <td class="font-mono text-purple">${log.ancientAdena}</td>
+                <td class="font-mono text-cyan">${log.donateCoins}</td>
+                <td>${itemsFormatted}</td>
+                <td class="text-end">
+                    <button class="btn-icon danger" onclick="window.deleteFarmLog('${log.id}')" title="Eliminar Registro">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateDashboardLogsCount() {
+    const countEl = document.getElementById('dashLogsCount');
+    if (countEl) countEl.textContent = `${farmLogs.length} Días`;
+}
