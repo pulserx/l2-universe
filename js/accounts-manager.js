@@ -5,6 +5,8 @@ import {
     onSnapshot, 
     doc, 
     deleteDoc, 
+    updateDoc,
+    arrayUnion,
     query, 
     orderBy, 
     serverTimestamp 
@@ -21,7 +23,7 @@ export function initAccountsManager(user) {
         unsubscribeAccounts = null;
     }
 
-    setupAccountFormHandler();
+    setupAccountFormHandlers();
 
     if (!user) {
         accountsList = [];
@@ -47,50 +49,84 @@ export function initAccountsManager(user) {
     });
 }
 
-function setupAccountFormHandler() {
-    const form = document.getElementById('formAddAccount');
-    if (!form) return;
+function setupAccountFormHandlers() {
+    const formAcc = document.getElementById('formAddAccount');
+    if (formAcc) {
+        formAcc.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
 
-    form.onsubmit = async (e) => {
-        e.preventDefault(); // Evita que la página recargue y vuelva al inicio sin guardar
+            const server = document.getElementById('accServer').value.trim();
+            const chronicle = document.getElementById('accChronicle').value.trim();
+            const username = document.getElementById('accUsername').value.trim();
+            const notes = document.getElementById('accNotes').value.trim();
 
-        if (!currentUser) {
-            alert("Debes iniciar sesión para guardar cuentas.");
-            return;
-        }
+            if (!server || !chronicle || !username) {
+                alert("Por favor completa los campos obligatorios.");
+                return;
+            }
 
-        const server = document.getElementById('accServer').value.trim();
-        const chronicle = document.getElementById('accChronicle').value.trim();
-        const username = document.getElementById('accUsername').value.trim();
-        const notes = document.getElementById('accNotes').value.trim();
+            try {
+                const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
+                await addDoc(accountsRef, {
+                    server,
+                    chronicle,
+                    username,
+                    notes,
+                    characters: [],
+                    createdAt: serverTimestamp()
+                });
 
-        if (!server || !chronicle || !username) {
-            alert("Por favor completa los campos obligatorios.");
-            return;
-        }
-
-        const newAccount = {
-            server,
-            chronicle,
-            username,
-            notes,
-            characters: [],
-            createdAt: serverTimestamp()
+                formAcc.reset();
+                window.closeModal('addAccountModal');
+                window.addNotification(`✅ Cuenta "${username}" guardada con éxito.`);
+            } catch (err) {
+                console.error("Error al guardar cuenta:", err);
+                alert("Error al guardar en la base de datos.");
+            }
         };
+    }
 
-        try {
-            const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
-            await addDoc(accountsRef, newAccount);
-            
-            form.reset();
-            window.closeModal('addAccountModal');
-            window.addNotification(`✅ Cuenta "${username}" guardada con éxito.`);
-        } catch (err) {
-            console.error("Error al guardar cuenta en Firebase:", err);
-            alert("Error al guardar la cuenta en la base de datos.");
-        }
-    };
+    const formChar = document.getElementById('formAddChar');
+    if (formChar) {
+        formChar.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const accountId = document.getElementById('charAccountId').value;
+            const name = document.getElementById('charName').value.trim();
+            const charClass = document.getElementById('charClass').value.trim();
+            const level = Number(document.getElementById('charLevel').value) || 1;
+            const gear = document.getElementById('charGear').value.trim();
+
+            if (!accountId || !name || !charClass) {
+                alert("Por favor completa los datos del personaje.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
+                await updateDoc(docRef, {
+                    characters: arrayUnion({ name, class: charClass, level, gear })
+                });
+
+                formChar.reset();
+                window.closeModal('addCharModal');
+                window.addNotification(`✨ Personaje "${name}" añadido correctamente.`);
+            } catch (err) {
+                console.error("Error al añadir personaje:", err);
+                alert("Error al guardar el personaje.");
+            }
+        };
+    }
 }
+
+window.openAddCharModal = (accountId) => {
+    const inputId = document.getElementById('charAccountId');
+    if (inputId) inputId.value = accountId;
+    const modal = document.getElementById('addCharModal');
+    if (modal) modal.style.display = 'flex';
+};
 
 window.deleteAccount = async (accountId) => {
     if (!currentUser) return;
@@ -149,10 +185,20 @@ export function renderAccounts() {
                 </button>
             </div>
             <p class="font-mono text-muted fs-sm mb-2"><i class="fa-solid fa-user me-1"></i> User: <strong>${acc.username}</strong></p>
-            ${acc.notes ? `<p class="fs-sm mb-3 text-muted"><em>${acc.notes}</em></p>` : ''}
+            ${acc.notes ? `<p class="fs-sm mb-2 text-muted"><em>${acc.notes}</em></p>` : ''}
             
+            <div class="characters-list mt-3 mb-2">
+                <span class="text-muted fs-sm mb-1 d-block">Personajes (${acc.characters ? acc.characters.length : 0}):</span>
+                ${acc.characters && acc.characters.length > 0 ? acc.characters.map(c => `
+                    <div class="d-flex justify-content-between align-items-center bg-dark p-1 rounded mb-1 fs-sm">
+                        <span><strong class="text-cyan">${c.name}</strong> (${c.class} - Lv.${c.level})</span>
+                        <span class="text-gold" style="font-size:0.75rem;">${c.gear || ''}</span>
+                    </div>
+                `).join('') : '<p class="text-muted fs-sm">Sin personajes añadidos.</p>'}
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top" style="border-color: rgba(255,255,255,0.05);">
-                <span class="text-muted fs-sm">Personajes guardados</span>
+                <span class="text-muted fs-sm">Acciones</span>
                 <button class="btn btn-outline btn-sm" onclick="window.openAddCharModal('${acc.id}')">
                     <i class="fa-solid fa-plus"></i> Añadir PJ
                 </button>
