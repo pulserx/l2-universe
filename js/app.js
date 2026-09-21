@@ -1,4 +1,4 @@
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { 
     onAuthStateChanged, 
     signInWithPopup, 
@@ -8,72 +8,62 @@ import {
     sendPasswordResetEmail,
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 import { initAccountsManager, createAccount, addCharacterToAccount, renderAccounts } from './accounts-manager.js';
 import { initCraftingManager } from './crafting.js';
 import { initTrackerManager, addFarmLog } from './tracker.js';
-import { initRaidsManager } from './raids.js';
+import { initRaidsManager, RAID_BOSSES_DB } from './raids.js';
 
-let authTabMode = 'login'; // 'login' | 'register'
+let authTabMode = 'login';
+let systemNotifications = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    initRaidsManager();
     setupEventListeners();
 });
 
-// ESCUCHADOR DE ESTADO DE AUTENTICACIÓN
 onAuthStateChanged(auth, (user) => {
     const publicContainer = document.getElementById('publicLoginContainer');
     const privateContainer = document.getElementById('privateAppContainer');
 
     if (user) {
-        // Usuario logueado: Ocultar login público y mostrar la suite privada
         if (publicContainer) publicContainer.style.display = 'none';
         if (privateContainer) privateContainer.style.display = 'flex';
 
-        // Actualizar datos del usuario en UI
         document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40';
         document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
         document.getElementById('dashUserName').textContent = user.displayName || user.email.split('@')[0];
 
-        // Inicializar escuchadores de Firestore
         initAccountsManager(user);
         initCraftingManager(user);
         initTrackerManager(user);
+        initRaidsManager(user);
 
-        // Ir por defecto al Dashboard
         window.navigateTo('dashboard');
     } else {
-        // Usuario no logueado: Mostrar únicamente la tarjeta de login centrada
         if (publicContainer) publicContainer.style.display = 'flex';
         if (privateContainer) privateContainer.style.display = 'none';
 
         initAccountsManager(null);
         initCraftingManager(null);
         initTrackerManager(null);
+        initRaidsManager(null);
     }
 });
 
-// NAVEGACIÓN TIPO SPA / PESTAÑAS
 window.navigateTo = (sectionId, event = null) => {
     if (event) event.preventDefault();
 
-    // Ocultar todas las secciones
     document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
-    
-    // Desactivar todos los enlaces de la navbar
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-    // Activar sección actual
     const targetSection = document.getElementById(`section-${sectionId}`);
     if (targetSection) targetSection.classList.add('active');
 
-    // Marcar pestaña activa en la navbar
     const activeLink = document.querySelector(`.nav-link[data-target="${sectionId}"]`);
     if (activeLink) activeLink.classList.add('active');
 };
 
-// CAMBIAR PESTAÑA ENTRE LOGIN Y REGISTRO
 window.switchAuthTab = (mode) => {
     authTabMode = mode;
     const btnLogin = document.getElementById('tabBtnLogin');
@@ -91,7 +81,6 @@ window.switchAuthTab = (mode) => {
     }
 };
 
-// AUTENTICACIÓN GOOGLE
 window.handleGoogleLogin = async () => {
     try {
         await signInWithPopup(auth, new GoogleAuthProvider());
@@ -101,12 +90,11 @@ window.handleGoogleLogin = async () => {
     }
 };
 
-// OLVIDÉ MI CONTRASEÑA
 window.handleForgotPassword = async (event) => {
     event.preventDefault();
     const email = document.getElementById('authEmail').value.trim();
     if (!email) {
-        alert("Por favor ingresa tu correo electrónico en el campo superior para enviarte el enlace de recuperación.");
+        alert("Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.");
         return;
     }
 
@@ -119,12 +107,44 @@ window.handleForgotPassword = async (event) => {
     }
 };
 
-// CERRAR SESIÓN
 window.handleLogout = () => signOut(auth);
 
-// CONFIGURACIÓN DE EVENT LISTENERS Y FORMULARIOS
+// SISTEMA DE NOTIFICACIONES Y ALERTAS
+window.toggleNotificationDropdown = () => {
+    const dropdown = document.getElementById('notifDropdown');
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.addNotification = (msg) => {
+    if (!systemNotifications.includes(msg)) {
+        systemNotifications.unshift(msg);
+        renderNotifications();
+    }
+};
+
+window.clearNotifications = () => {
+    systemNotifications = [];
+    renderNotifications();
+};
+
+function renderNotifications() {
+    const badge = document.getElementById('notifBadge');
+    const list = document.getElementById('notifList');
+    if (!badge || !list) return;
+
+    if (systemNotifications.length > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = systemNotifications.length;
+        list.innerHTML = systemNotifications.map(n => `<div class="notif-item">${n}</div>`).join('');
+    } else {
+        badge.style.display = 'none';
+        list.innerHTML = '<p class="text-muted text-center fs-sm py-2">Sin notificaciones pendientes.</p>';
+    }
+}
+
 function setupEventListeners() {
-    // Formulario de Login / Registro por Email
     document.getElementById('formAuth')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('authEmail').value.trim();
@@ -142,7 +162,6 @@ function setupEventListeners() {
         }
     });
 
-    // Formulario Nueva Cuenta
     document.getElementById('formAddAccount')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         await createAccount({
@@ -155,7 +174,6 @@ function setupEventListeners() {
         document.getElementById('addAccountModal').style.display = 'none';
     });
 
-    // Formulario Agregar Personaje
     document.getElementById('formAddChar')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const accountId = document.getElementById('charAccountId').value;
@@ -169,7 +187,6 @@ function setupEventListeners() {
         document.getElementById('addCharModal').style.display = 'none';
     });
 
-    // Formulario Registrar Farmeo
     document.getElementById('formAddFarmLog')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         await addFarmLog({
@@ -177,11 +194,39 @@ function setupEventListeners() {
             adena: parseInt(document.getElementById('farmAdena').value, 10) || 0,
             ancientAdena: parseInt(document.getElementById('farmAncientAdena').value, 10) || 0,
             donateCoins: parseInt(document.getElementById('farmDonateCoins').value, 10) || 0,
-            sealStones: parseInt(document.getElementById('farmSealStones').value, 10) || 0
+            ls76: parseInt(document.getElementById('farmLifeStone76').value, 10) || 0,
+            midLs76: parseInt(document.getElementById('farmMidLifeStone76').value, 10) || 0,
+            topLs76: parseInt(document.getElementById('farmTopLifeStone76').value, 10) || 0,
+            giantsCodex: parseInt(document.getElementById('farmGiantsCodex').value, 10) || 0,
+            scrolls: parseInt(document.getElementById('farmScrolls').value, 10) || 0,
+            letters: parseInt(document.getElementById('farmLetters').value, 10) || 0,
+            hearts: parseInt(document.getElementById('farmHearts').value, 10) || 0
         });
         e.target.reset();
+        window.addNotification("✅ Jornada de farmeo registrada correctamente.");
+    });
+
+    document.getElementById('formRaidTimer')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const bossId = document.getElementById('raidBossId').value;
+        const deathTime = document.getElementById('raidDeathTime').value;
+
+        try {
+            await addDoc(collection(db, 'users', user.uid, 'raid_timers'), {
+                bossId,
+                deathTime,
+                createdAt: serverTimestamp()
+            });
+            document.getElementById('addRaidTimerModal').style.display = 'none';
+            e.target.reset();
+            window.addNotification("⏰ Horario de Raid Boss registrado con éxito.");
+        } catch (err) {
+            console.error("Error al registrar horario:", err);
+        }
     });
 }
 
-// Disparador de renderizado para el filtro de servidor
 window.triggerAccountRender = () => renderAccounts();

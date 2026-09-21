@@ -71,12 +71,28 @@
                     <li><a href="#" class="nav-link active" data-target="dashboard" onclick="window.navigateTo('dashboard', event)"><i class="fa-solid fa-chart-pie"></i> Home</a></li>
                     <li><a href="#" class="nav-link" data-target="accounts" onclick="window.navigateTo('accounts', event)"><i class="fa-solid fa-users-gear"></i> Gestión Cuentas</a></li>
                     <li><a href="#" class="nav-link" data-target="craft" onclick="window.navigateTo('craft', event)"><i class="fa-solid fa-hammer"></i> Calculadora Craft</a></li>
-                    <li><a href="#" class="nav-link" data-target="tracker" onclick="window.navigateTo('tracker', event)"><i class="fa-solid fa-coins"></i> Diario Farmeo</a></li>
-                    <li><a href="#" class="nav-link" data-target="raids" onclick="window.navigateTo('raids', event)"><i class="fa-solid fa-dragon"></i> Base Raids</a></li>
+                    <li><a href="#" class="nav-link" data-target="tracker" onclick="window.navigateTo('tracker', event)"><i class="fa-solid fa-coins"></i> Registro Farmeo</a></li>
+                    <li><a href="#" class="nav-link" data-target="raids" onclick="window.navigateTo('raids', event)"><i class="fa-solid fa-dragon"></i> Raids</a></li>
                 </ul>
 
-                <!-- Menú Usuario -->
+                <!-- Menú Usuario & Notificaciones -->
                 <div class="user-profile-menu">
+                    <div class="notification-wrapper">
+                        <button class="btn-icon text-cyan" id="btnNotifications" onclick="window.toggleNotificationDropdown()" title="Notificaciones">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+                        </button>
+                        <div id="notifDropdown" class="notification-dropdown card" style="display:none;">
+                            <div class="notif-header">
+                                <strong>Alertas de Spawn y Avances</strong>
+                                <button class="btn-icon-sm" onclick="window.clearNotifications()"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                            <div id="notifList" class="notif-list">
+                                <p class="text-muted text-center fs-sm py-2">Sin notificaciones pendientes.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <img id="userAvatar" src="https://via.placeholder.com/40" alt="Avatar" class="user-avatar">
                     <span id="userName" class="user-name font-mono">Cargando...</span>
                     <button class="btn-icon danger" onclick="window.handleLogout()" title="Cerrar Sesión">
@@ -145,7 +161,7 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN: CALCULADORA DE CRAFTING -->
+            <!-- SECCIÓN: CALCULADORA DE CRAFTING Y METAS -->
             <section id="section-craft" class="app-section">
                 <div class="section-header">
                     <div>
@@ -154,8 +170,26 @@
                     </div>
                 </div>
 
-                <div class="craft-selector-card card mb-4">
-                    <div class="form-group">
+                <!-- SECCIÓN PROGRESO Y ESTADÍSTICAS DE CRAFT -->
+                <div class="craft-stats-summary card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3><i class="fa-solid fa-chart-pie text-cyan"></i> Progreso de Crafteo</h3>
+                        <span id="craftRatioBadge" class="badge badge-purple">Tasa de Éxito: 0%</span>
+                    </div>
+                    <div class="quick-stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Crafts Exitosos (Success)</span>
+                            <span id="craftSuccessCount" class="stat-value text-green font-mono">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Crafts Fallidos (Fail)</span>
+                            <span id="craftFailCount" class="stat-value text-cyan font-mono">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="craft-selector-card card mb-4 text-center">
+                    <div class="form-group max-w-500 center-block">
                         <label for="craftRecipeSelect">Selecciona Receta de Interlude</label>
                         <select id="craftRecipeSelect" class="form-control">
                             <!-- Generado por JS -->
@@ -175,31 +209,12 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN: DIARIO DE FARMEO -->
+            <!-- SECCIÓN: REGISTRO DE FARMEO DIARIO -->
             <section id="section-tracker" class="app-section">
                 <div class="section-header">
                     <div>
-                        <h2><i class="fa-solid fa-coins text-gold"></i> Diario de Farmeo Diario</h2>
+                        <h2><i class="fa-solid fa-coins text-gold"></i> Registro de Farmeo Diario</h2>
                         <p>Registra tus ingresos por jornada, proyecta metas y analiza tu rendimiento.</p>
-                    </div>
-                </div>
-
-                <div class="tracker-stats-grid mb-4">
-                    <div class="stat-card card">
-                        <span class="stat-label"><i class="fa-solid fa-coins text-gold"></i> Adena Total</span>
-                        <span id="totalAdena" class="stat-value text-gold font-mono">0</span>
-                    </div>
-                    <div class="stat-card card">
-                        <span class="stat-label"><i class="fa-solid fa-gem text-purple"></i> Ancient Adena</span>
-                        <span id="totalAncientAdena" class="stat-value text-purple font-mono">0</span>
-                    </div>
-                    <div class="stat-card card">
-                        <span class="stat-label"><i class="fa-solid fa-circle-dollar-to-slot text-cyan"></i> Donate Coins</span>
-                        <span id="totalDonateCoins" class="stat-value text-cyan font-mono">0</span>
-                    </div>
-                    <div class="stat-card card">
-                        <span class="stat-label"><i class="fa-solid fa-cubes text-green"></i> Seal Stones</span>
-                        <span id="totalSealStones" class="stat-value text-green font-mono">0</span>
                     </div>
                 </div>
 
@@ -209,20 +224,44 @@
                             <h3><i class="fa-solid fa-plus-circle text-cyan"></i> Registrar Farmeo de Hoy</h3>
                             <form id="formAddFarmLog" class="mt-3">
                                 <div class="form-group mb-2">
-                                    <label>Adena</label>
-                                    <input type="number" id="farmAdena" class="form-control" placeholder="Ej: 15000000" min="0">
+                                    <label><img src="https://l2wiki.com/images/a/a2/Item_0057.png" class="l2-mini-icon"> Adena</label>
+                                    <input type="number" id="farmAdena" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label>Ancient Adena</label>
-                                    <input type="number" id="farmAncientAdena" class="form-control" placeholder="Ej: 500000" min="0">
+                                    <label><img src="https://l2wiki.com/images/e/e0/Item_5575.png" class="l2-mini-icon"> Ancient Adena</label>
+                                    <input type="number" id="farmAncientAdena" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label>Donate Coins</label>
-                                    <input type="number" id="farmDonateCoins" class="form-control" placeholder="Ej: 10" min="0">
+                                    <label><img src="https://l2wiki.com/images/4/47/Item_3703.png" class="l2-mini-icon"> Donate Coins</label>
+                                    <input type="number" id="farmDonateCoins" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Life Stone lvl 76</label>
+                                    <input type="number" id="farmLifeStone76" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Mid's Life Stone lvl 76</label>
+                                    <input type="number" id="farmMidLifeStone76" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Top Life Stone lvl 76</label>
+                                    <input type="number" id="farmTopLifeStone76" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><img src="https://l2wiki.com/images/1/1a/Item_6622.png" class="l2-mini-icon"> Giant's Codex / Box Codex</label>
+                                    <input type="number" id="farmGiantsCodex" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><img src="https://l2wiki.com/images/a/a9/Item_0959.png" class="l2-mini-icon"> Scrolls (Enchants A/S, BSS, Wears, etc.)</label>
+                                    <input type="number" id="farmScrolls" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label><i class="fa-solid fa-font text-cyan"></i> Letras (L - I - N - E - A - G - E)</label>
+                                    <input type="number" id="farmLetters" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-3">
-                                    <label>Seal Stones</label>
-                                    <input type="number" id="farmSealStones" class="form-control" placeholder="Ej: 120000" min="0">
+                                    <label><i class="fa-solid fa-heart text-cyan"></i> Corazones (1 al 9)</label>
+                                    <input type="number" id="farmHearts" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fa-solid fa-floppy-disk"></i> Guardar Jornada
@@ -249,7 +288,8 @@
                                             <th>Adena</th>
                                             <th>A. Adena</th>
                                             <th>Coins</th>
-                                            <th>Stones</th>
+                                            <th>L. Stones 76</th>
+                                            <th>Giant Codex</th>
                                             <th class="text-end">Acción</th>
                                         </tr>
                                     </thead>
@@ -263,17 +303,18 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN: BASE DE RAIDS -->
+            <!-- SECCIÓN: RAIDS -->
             <section id="section-raids" class="app-section">
                 <div class="section-header">
                     <div>
-                        <h2><i class="fa-solid fa-dragon text-purple"></i> Base de Datos de Raid Bosses</h2>
-                        <p>Consulta estadísticas, estrategias de combate, ubicaciones y drops principales.</p>
+                        <h2><i class="fa-solid fa-dragon text-purple"></i> Guía y Control de Raids</h2>
+                        <p>Base de datos de Grand Bosses, temporizadores de respawn y guías tácticas de acceso.</p>
                     </div>
                     <div class="section-actions d-flex gap-2">
-                        <input type="text" id="raidSearchInput" class="form-control" placeholder="Buscar por nombre o zona...">
+                        <input type="text" id="raidSearchInput" class="form-control" placeholder="Buscar Boss o Zona...">
                         <select id="raidLevelFilter" class="form-control" style="width: 180px;">
-                            <option value="ALL">Todos los Niveles</option>
+                            <option value="ALL">Todos los Bosses</option>
+                            <option value="EPIC">Épicos / Grand Bosses</option>
                             <option value="70-75">Nivel 70 - 75</option>
                             <option value="76-80">Nivel 76 - 80</option>
                             <option value="80+">Nivel 80+</option>
@@ -287,6 +328,40 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- CONTENEDOR DE CELEBRACIÓN FIESTA EMOJIS -->
+    <div id="celebrationOverlay" class="celebration-overlay" style="display:none;">
+        <div class="celebration-content card border-cyan text-center">
+            <h1 class="celebration-title">🎉 ⚔️ ¡Ítems conseguidos, A Craftear! ¡Suerte! ⚔️ 🎉</h1>
+            <p class="celebration-emojis">🐉 ✨ 🛡️ 💎 🗡️ 🔥 🏆 🎲</p>
+            <button class="btn btn-primary mt-3 btn-lg" onclick="document.getElementById('celebrationOverlay').style.display='none'">¡Aceptar y Craftear!</button>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR HORARIO DE RAID BOSS -->
+    <div id="addRaidTimerModal" class="modal-backdrop" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Registrar Hora de Muerte del Boss</h3>
+                <button class="btn-icon" onclick="document.getElementById('addRaidTimerModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formRaidTimer">
+                <input type="hidden" id="raidBossId">
+                <div class="form-group mb-2">
+                    <label>Nombre del Raid Boss</label>
+                    <input type="text" id="raidBossNameDisplay" class="form-control" readonly>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Hora Exacta de Muerte</label>
+                    <input type="datetime-local" id="raidDeathTime" class="form-control" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addRaidTimerModal').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Horario</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- PIE DE PÁGINA FIX EN LA PARTE INFERIOR -->
@@ -318,7 +393,7 @@
                     <input type="text" id="accUsername" class="form-control" placeholder="Nombre de usuario" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label>Notas Secretas / Rol de la cuenta</label>
+                    <label>Notas / Rol de la cuenta</label>
                     <textarea id="accNotes" class="form-control" placeholder="Ej: Buffers principales, Clave secundaria, etc."></textarea>
                 </div>
                 <div class="modal-actions">
