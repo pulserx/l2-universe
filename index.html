@@ -435,63 +435,151 @@
         </div>
     </div>
 
-    <!-- SCRIPT DEL UNIVERSO ANIMADO 3D -->
+    <!-- SCRIPT DEL UNIVERSO ANIMADO 3D (CASCADA PAUSADA + COMETAS PASIVOS) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('universeCanvas');
             if (!canvas || typeof THREE === 'undefined') return;
 
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
             const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
 
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // GENERACIÓN DE ESTRELLAS EN 3D
-            const starsCount = 1200;
+            // GENERACIÓN DE TEXTURA DE ESTRELLA BRILLANTE REDONDA (GLOW)
+            function createGlowStarTexture() {
+                const canvasTexture = document.createElement('canvas');
+                canvasTexture.width = 32;
+                canvasTexture.height = 32;
+                const ctx = canvasTexture.getContext('2d');
+
+                const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                gradient.addColorStop(0.3, 'rgba(255, 0, 55, 0.8)');
+                gradient.addColorStop(0.7, 'rgba(120, 0, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 32, 32);
+
+                const texture = new THREE.CanvasTexture(canvasTexture);
+                return texture;
+            }
+
+            // CREACIÓN DE ESTRELLAS EN CASCADA
+            const starsCount = 600;
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(starsCount * 3);
-            const colors = new Float32Array(starsCount * 3);
+            const speeds = new Float32Array(starsCount);
 
-            const colorPalette = [
-                new THREE.Color('#ff0037'), // Neon Crimson
-                new THREE.Color('#e11d48'), // Ruby
-                new THREE.Color('#00f3ff'), // Cyan
-                new THREE.Color('#ffffff')  // Blanco
-            ];
-
-            for (let i = 0; i < starsCount * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 800;
-                positions[i + 1] = (Math.random() - 0.5) * 800;
-                positions[i + 2] = (Math.random() - 0.5) * 800;
-
-                const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                colors[i] = c.r;
-                colors[i + 1] = c.g;
-                colors[i + 2] = c.b;
+            for (let i = 0; i < starsCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 800;     // X
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 800; // Y
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 500; // Z
+                speeds[i] = 0.15 + Math.random() * 0.25;             // Velocidad lenta de caída
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-            const material = new THREE.PointsMaterial({
-                size: 2.2,
-                vertexColors: true,
+            const starMaterial = new THREE.PointsMaterial({
+                size: 3.5,
+                map: createGlowStarTexture(),
                 transparent: true,
-                opacity: 0.85
+                opacity: 0.85,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
             });
 
-            const starField = new THREE.Points(geometry, material);
+            const starField = new THREE.Points(geometry, starMaterial);
             scene.add(starField);
 
-            camera.position.z = 400;
+            // CREACIÓN DE COMETAS / ESTRELLAS FUGACES
+            const cometsCount = 3;
+            const cometsGroup = new THREE.Group();
 
-            // ANIMACIÓN CONTINUA DE ORBITA Y ROTACIÓN
+            function createComet() {
+                const geom = new THREE.BufferGeometry();
+                const cometPos = new Float32Array(6); // 2 puntos para la línea
+                
+                geom.setAttribute('position', new THREE.BufferAttribute(cometPos, 3));
+
+                const mat = new THREE.LineBasicMaterial({
+                    color: 0xff0037,
+                    transparent: true,
+                    opacity: 0.7,
+                    blending: THREE.AdditiveBlending
+                });
+
+                const line = new THREE.Line(geom, mat);
+                
+                // Reiniciar estado del cometa
+                line.userData = {
+                    x: (Math.random() - 0.5) * 600,
+                    y: 200 + Math.random() * 100,
+                    z: -100 - Math.random() * 200,
+                    length: 25 + Math.random() * 35,
+                    speed: 1.2 + Math.random() * 0.8,
+                    active: true
+                };
+
+                return line;
+            }
+
+            for (let c = 0; c < cometsCount; c++) {
+                cometsGroup.add(createComet());
+            }
+
+            scene.add(cometsGroup);
+            camera.position.z = 350;
+
+            // ANIMACIÓN PRINCIPAL EN CASCADA PAUSADA
             function animate() {
                 requestAnimationFrame(animate);
-                starField.rotation.x += 0.0003;
-                starField.rotation.y += 0.0005;
+
+                // 1. Movimiento suave en CASCADA de las estrellas (vertical hacia abajo)
+                const posArr = starField.geometry.attributes.position.array;
+                for (let i = 0; i < starsCount; i++) {
+                    posArr[i * 3 + 1] -= speeds[i]; // Bajar suavemente en Y
+
+                    // Si sale de la pantalla por abajo, reaparece arriba
+                    if (posArr[i * 3 + 1] < -400) {
+                        posArr[i * 3 + 1] = 400;
+                        posArr[i * 3] = (Math.random() - 0.5) * 800;
+                    }
+                }
+                starField.geometry.attributes.position.needsUpdate = true;
+
+                // 2. Animación lenta y elegante de COMETAS
+                cometsGroup.children.forEach(comet => {
+                    const data = comet.userData;
+                    if (data.active) {
+                        data.x += data.speed;
+                        data.y -= data.speed * 0.6;
+
+                        const linePos = comet.geometry.attributes.position.array;
+                        // Cabeza del cometa
+                        linePos[0] = data.x;
+                        linePos[1] = data.y;
+                        linePos[2] = data.z;
+                        // Cola del cometa
+                        linePos[3] = data.x - data.length;
+                        linePos[4] = data.y + (data.length * 0.6);
+                        linePos[5] = data.z;
+
+                        comet.geometry.attributes.position.needsUpdate = true;
+
+                        // Reiniciar cometa al salir de pantalla
+                        if (data.x > 500 || data.y < -400) {
+                            data.x = -400 - Math.random() * 200;
+                            data.y = 200 + Math.random() * 200;
+                            data.z = -50 - Math.random() * 200;
+                            data.speed = 1.0 + Math.random() * 0.8;
+                        }
+                    }
+                });
+
                 renderer.render(scene, camera);
             }
 
