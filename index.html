@@ -93,9 +93,8 @@
                         </div>
                     </div>
 
-                    <div class="user-avatar-placeholder" style="width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--neon-cyan); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);">
-                        <i class="fa-solid fa-user text-cyan"></i>
-                    </div>
+                    <!-- FOTO DE PERFIL DE GOOGLE / GMAIL -->
+                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=User&background=ff0037&color=fff';">
                     <span id="userName" class="user-name font-mono">Cargando...</span>
                     <button class="btn-icon danger" onclick="window.handleLogout()" title="Cerrar Sesión">
                         <i class="fa-solid fa-right-from-bracket"></i>
@@ -338,7 +337,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3>Registrar Hora de Muerte del Boss</h3>
-                <button class="btn-icon" onclick="document.getElementById('addRaidTimerModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+                <button class="btn-icon" onclick="window.closeModal('addRaidTimerModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="formRaidTimer">
                 <input type="hidden" id="raidBossId">
@@ -351,7 +350,7 @@
                     <input type="datetime-local" id="raidDeathTime" class="form-control" required>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addRaidTimerModal').style.display='none'">Cancelar</button>
+                    <button type="button" class="btn btn-outline" onclick="window.closeModal('addRaidTimerModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar Horario</button>
                 </div>
             </form>
@@ -371,7 +370,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3>Registrar Cuenta de Juego</h3>
-                <button class="btn-icon" onclick="document.getElementById('addAccountModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+                <button class="btn-icon" onclick="window.closeModal('addAccountModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="formAddAccount">
                 <div class="form-group mb-2">
@@ -391,7 +390,7 @@
                     <textarea id="accNotes" class="form-control" placeholder="Ej: Buffers principales, Clave secundaria, etc."></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addAccountModal').style.display='none'">Cancelar</button>
+                    <button type="button" class="btn btn-outline" onclick="window.closeModal('addAccountModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar Cuenta</button>
                 </div>
             </form>
@@ -403,7 +402,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3>Añadir Personaje a la Cuenta</h3>
-                <button class="btn-icon" onclick="document.getElementById('addCharModal').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+                <button class="btn-icon" onclick="window.closeModal('addCharModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="formAddChar">
                 <input type="hidden" id="charAccountId">
@@ -424,7 +423,7 @@
                     <input type="text" id="charGear" class="form-control" placeholder="Ej: Draconic Set +6, Angel Slayer Focus">
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addCharModal').style.display='none'">Cancelar</button>
+                    <button type="button" class="btn btn-outline" onclick="window.closeModal('addCharModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Añadir PJ</button>
                 </div>
             </form>
