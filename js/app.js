@@ -1,285 +1,206 @@
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { 
-    onAuthStateChanged, 
     signInWithPopup, 
     GoogleAuthProvider, 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
-    sendPasswordResetEmail,
-    signOut 
+    signOut, 
+    onAuthStateChanged,
+    sendPasswordResetEmail 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-import { initAccountsManager, createAccount, addCharacterToAccount, renderAccounts } from './accounts-manager.js';
+import { initAccountsManager } from './accounts-manager.js';
 import { initCraftingManager } from './crafting.js';
-import { initTrackerManager, addFarmLog } from './tracker.js';
+import { initTrackerManager } from './tracker.js';
 import { initRaidsManager } from './raids.js';
 
-let authTabMode = 'login';
-let systemNotifications = [];
+let notifications = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupEventListeners();
+    console.log("🚀 L2 Universe - Sistema inicializado correctamente.");
+    setupGlobalNavigation();
+    setupAuthListeners();
 });
 
-// ESCUCHADOR DE SESIÓN CON CARGA GARANTIZADA DE AVATAR DE GMAIL/GOOGLE
-onAuthStateChanged(auth, async (user) => {
-    const publicContainer = document.getElementById('publicLoginContainer');
-    const privateContainer = document.getElementById('privateAppContainer');
+// Configuración de Navegación SPA
+function setupGlobalNavigation() {
+    window.navigateTo = (targetSectionId, event) => {
+        if (event) event.preventDefault();
+        
+        document.querySelectorAll('.app-section').forEach(section => {
+            section.classList.remove('active');
+        });
 
-    if (user) {
-        if (publicContainer) publicContainer.style.display = 'none';
-        if (privateContainer) privateContainer.style.display = 'flex';
-
-        const avatarEl = document.getElementById('userAvatar');
-        const nameEl = document.getElementById('userName');
-        const dashNameEl = document.getElementById('dashUserName');
-
-        if (avatarEl) {
-            // Carga de la foto real de Google obtenida en la autenticación
-            const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=ff0037&color=fff`;
-            avatarEl.src = photo;
+        const target = document.getElementById(`section-${targetSectionId}`);
+        if (target) {
+            target.classList.add('active');
         }
-        if (nameEl) nameEl.textContent = user.displayName || user.email.split('@')[0];
-        if (dashNameEl) dashNameEl.textContent = user.displayName || user.email.split('@')[0];
 
-        // Sincronizar lectura y escucha de Firestore
-        initAccountsManager(user);
-        initCraftingManager(user);
-        initTrackerManager(user);
-        initRaidsManager(user);
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-target') === targetSectionId) {
+                link.classList.add('active');
+            }
+        });
+    };
 
-        window.navigateTo('dashboard');
-    } else {
-        if (publicContainer) publicContainer.style.display = 'flex';
-        if (privateContainer) privateContainer.style.display = 'none';
+    window.switchAuthTab = (tab) => {
+        const btnLogin = document.getElementById('tabBtnLogin');
+        const btnRegister = document.getElementById('tabBtnRegister');
+        const submitBtn = document.getElementById('btnAuthSubmit');
 
-        initAccountsManager(null);
-        initCraftingManager(null);
-        initTrackerManager(null);
-        initRaidsManager(null);
-    }
-});
+        if (!btnLogin || !btnRegister || !submitBtn) return;
 
-window.navigateTo = (sectionId, event = null) => {
-    if (event) event.preventDefault();
+        if (tab === 'login') {
+            btnLogin.classList.add('active');
+            btnRegister.classList.remove('active');
+            submitBtn.textContent = 'Ingresar';
+            submitBtn.dataset.mode = 'login';
+        } else {
+            btnRegister.classList.add('active');
+            btnLogin.classList.remove('active');
+            submitBtn.textContent = 'Registrarse';
+            submitBtn.dataset.mode = 'register';
+        }
+    };
 
-    document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    window.closeModal = (modalId) => {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'none';
+    };
 
-    const targetSection = document.getElementById(`section-${sectionId}`);
-    if (targetSection) targetSection.classList.add('active');
+    window.toggleNotificationDropdown = () => {
+        const dropdown = document.getElementById('notifDropdown');
+        if (dropdown) {
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+    };
 
-    const activeLink = document.querySelector(`.nav-link[data-target="${sectionId}"]`);
-    if (activeLink) activeLink.classList.add('active');
-};
+    window.clearNotifications = () => {
+        notifications = [];
+        renderNotifications();
+    };
 
-window.switchAuthTab = (mode) => {
-    authTabMode = mode;
-    const btnLogin = document.getElementById('tabBtnLogin');
-    const btnRegister = document.getElementById('tabBtnRegister');
-    const btnSubmit = document.getElementById('btnAuthSubmit');
+    window.addNotification = (msg) => {
+        notifications.unshift({ text: msg, time: new Date().toLocaleTimeString() });
+        renderNotifications();
+    };
+}
 
-    if (mode === 'login') {
-        if (btnLogin) btnLogin.classList.add('active');
-        if (btnRegister) btnRegister.classList.remove('active');
-        if (btnSubmit) btnSubmit.textContent = 'Ingresar';
-    } else {
-        if (btnRegister) btnRegister.classList.add('active');
-        if (btnLogin) btnLogin.classList.remove('active');
-        if (btnSubmit) btnSubmit.textContent = 'Crear Cuenta';
-    }
-};
+function renderNotifications() {
+    const listEl = document.getElementById('notifList');
+    const badgeEl = document.getElementById('notifBadge');
+    if (!listEl || !badgeEl) return;
 
-// SELECTOR EXPLICITO DE CUENTAS DE GOOGLE AL INICIAR SESIÓN
-window.handleGoogleLogin = async () => {
-    try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithPopup(auth, provider);
-    } catch (e) {
-        console.error("Error al iniciar sesión con Google:", e);
-        alert("Error de autenticación con Google: " + e.message);
-    }
-};
-
-window.handleForgotPassword = async (event) => {
-    event.preventDefault();
-    const email = document.getElementById('authEmail')?.value.trim();
-    if (!email) {
-        alert("Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.");
+    if (notifications.length === 0) {
+        listEl.innerHTML = `<p class="text-muted text-center fs-sm py-2">Sin notificaciones pendientes.</p>`;
+        badgeEl.style.display = 'none';
         return;
     }
 
-    try {
-        await sendPasswordResetEmail(auth, email);
-        alert(`Se ha enviado un correo de recuperación a ${email}.`);
-    } catch (e) {
-        console.error(e);
-        alert("No se pudo enviar el correo de recuperación. Verifica la dirección.");
-    }
-};
+    badgeEl.style.display = 'inline-block';
+    badgeEl.textContent = notifications.length;
 
-window.handleLogout = () => signOut(auth);
-
-// SISTEMA DE NOTIFICACIONES Y ALERTAS
-window.toggleNotificationDropdown = () => {
-    const dropdown = document.getElementById('notifDropdown');
-    if (dropdown) {
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-};
-
-window.addNotification = (msg) => {
-    if (!systemNotifications.includes(msg)) {
-        systemNotifications.unshift(msg);
-        renderNotifications();
-    }
-};
-
-window.clearNotifications = () => {
-    systemNotifications = [];
-    renderNotifications();
-};
-
-function renderNotifications() {
-    const badge = document.getElementById('notifBadge');
-    const list = document.getElementById('notifList');
-    if (!badge || !list) return;
-
-    if (systemNotifications.length > 0) {
-        badge.style.display = 'inline-block';
-        badge.textContent = systemNotifications.length;
-        list.innerHTML = systemNotifications.map(n => `<div class="notif-item">${n}</div>`).join('');
-    } else {
-        badge.style.display = 'none';
-        list.innerHTML = '<p class="text-muted text-center fs-sm py-2">Sin notificaciones pendientes.</p>';
-    }
+    listEl.innerHTML = notifications.map(n => `
+        <div class="notif-item">
+            <span class="text-cyan font-mono" style="font-size:0.7rem;">[${n.time}]</span>
+            <p>${n.text}</p>
+        </div>
+    `).join('');
 }
 
-// CERRAR CUALQUIER MODAL
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    }
-};
+// Autenticación y Firebase
+function setupAuthListeners() {
+    const formAuth = document.getElementById('formAuth');
+    if (formAuth) {
+        formAuth.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const submitBtn = document.getElementById('btnAuthSubmit');
+            const isRegister = submitBtn && submitBtn.dataset.mode === 'register';
 
-function setupEventListeners() {
-    document.getElementById('formAuth')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('authEmail').value.trim();
-        const pass = document.getElementById('authPassword').value;
-
-        try {
-            if (authTabMode === 'login') {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } else {
-                await createUserWithEmailAndPassword(auth, email, pass);
+            try {
+                if (isRegister) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    window.addNotification("✨ Cuenta creada y registrada con éxito.");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    window.addNotification("👋 Sesión iniciada correctamente.");
+                }
+            } catch (error) {
+                console.error("Error de Autenticación:", error);
+                alert("Error: " + error.message);
             }
-        } catch (e) {
-            console.error(e);
-            alert("Error de autenticación: " + e.message);
-        }
-    });
+        };
+    }
 
-    // GUARDAR CUENTA -> PERSISTIR EN FIRESTORE Y CERRAR MODAL INMEDIATAMENTE
-    document.getElementById('formAddAccount')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const server = document.getElementById('accServer')?.value.trim();
-        const chronicle = document.getElementById('accChronicle')?.value.trim();
-        const username = document.getElementById('accUsername')?.value.trim();
-        const secretNotes = document.getElementById('accNotes')?.value.trim();
-
-        if (!server || !chronicle || !username) return;
-
-        // Ocultar modal e indicar guardado
-        window.closeModal('addAccountModal');
-
+    window.handleGoogleLogin = async () => {
         try {
-            await createAccount({ server, chronicle, username, secretNotes });
-            window.addNotification("✅ Cuenta de juego guardada con éxito.");
-            e.target.reset();
-        } catch (err) {
-            console.error("Error guardando cuenta:", err);
-            alert("Ocurrió un error al intentar guardar la cuenta en la nube.");
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            window.addNotification("🚀 Conectado exitosamente con Google.");
+        } catch (error) {
+            console.error("Error Google Login:", error);
+            alert("No se pudo iniciar sesión con Google: " + error.message);
         }
-    });
+    };
 
-    // AÑADIR PERSONAJE -> PERSISTIR EN FIRESTORE Y CERRAR MODAL INMEDIATAMENTE
-    document.getElementById('formAddChar')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const accountId = document.getElementById('charAccountId')?.value;
-        const name = document.getElementById('charName')?.value.trim();
-        const className = document.getElementById('charClass')?.value.trim();
-        const level = parseInt(document.getElementById('charLevel')?.value, 10);
-        const equipment = document.getElementById('charGear')?.value.trim();
-
-        if (!accountId || !name || !className) return;
-
-        // Ocultar modal e indicar guardado
-        window.closeModal('addCharModal');
-
+    window.handleLogout = async () => {
         try {
-            await addCharacterToAccount(accountId, { name, className, level, equipment });
-            window.addNotification("✅ Personaje añadido con éxito.");
-            e.target.reset();
-        } catch (err) {
-            console.error("Error añadiendo personaje:", err);
-            alert("Ocurrió un error al intentar añadir el personaje.");
+            await signOut(auth);
+            window.addNotification("🔒 Sesión cerrada.");
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
         }
-    });
+    };
 
-    document.getElementById('formAddFarmLog')?.addEventListener('submit', async (e) => {
+    window.handleForgotPassword = async (e) => {
         e.preventDefault();
-        try {
-            await addFarmLog({
-                date: new Date().toLocaleDateString(),
-                adena: parseInt(document.getElementById('farmAdena')?.value, 10) || 0,
-                ancientAdena: parseInt(document.getElementById('farmAncientAdena')?.value, 10) || 0,
-                donateCoins: parseInt(document.getElementById('farmDonateCoins')?.value, 10) || 0,
-                ls76: parseInt(document.getElementById('farmLifeStone76')?.value, 10) || 0,
-                midLs76: parseInt(document.getElementById('farmMidLifeStone76')?.value, 10) || 0,
-                topLs76: parseInt(document.getElementById('farmTopLifeStone76')?.value, 10) || 0,
-                giantsCodex: parseInt(document.getElementById('farmGiantsCodex')?.value, 10) || 0,
-                scrolls: parseInt(document.getElementById('farmScrolls')?.value, 10) || 0,
-                letters: parseInt(document.getElementById('farmLetters')?.value, 10) || 0,
-                hearts: parseInt(document.getElementById('farmHearts')?.value, 10) || 0
-            });
-            window.addNotification("✅ Jornada de farmeo registrada correctamente.");
-            e.target.reset();
-        } catch (err) {
-            console.error("Error registrando jornada:", err);
-            alert("Ocurrió un error al intentar guardar el farmeo.");
+        const email = document.getElementById('authEmail').value;
+        if (!email) {
+            alert("Por favor ingresa tu correo electrónico primero.");
+            return;
         }
-    });
-
-    document.getElementById('formRaidTimer')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const bossId = document.getElementById('raidBossId')?.value;
-        const deathTime = document.getElementById('raidDeathTime')?.value;
-
-        if (!bossId || !deathTime) return;
-
-        window.closeModal('addRaidTimerModal');
-
         try {
-            const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            const { db } = await import("./firebase-config.js");
-            await addDoc(collection(db, 'users', user.uid, 'raid_timers'), {
-                bossId,
-                deathTime,
-                createdAt: serverTimestamp()
-            });
-            window.addNotification("⏰ Horario de Raid Boss registrado con éxito.");
-            e.target.reset();
-        } catch (err) {
-            console.error("Error al registrar horario:", err);
-            alert("No se pudo guardar el horario del Raid Boss.");
+            await sendPasswordResetEmail(auth, email);
+            alert("Correo de recuperación enviado con éxito.");
+        } catch (error) {
+            alert("Error al enviar recuperación: " + error.message);
+        }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        const loginContainer = document.getElementById('publicLoginContainer');
+        const appContainer = document.getElementById('privateAppContainer');
+
+        if (user) {
+            console.log("Usuario autenticado:", user.email);
+            if (loginContainer) loginContainer.style.display = 'none';
+            if (appContainer) appContainer.style.display = 'block';
+
+            // Actualizar datos de usuario en UI
+            const userNameEl = document.getElementById('userName');
+            const dashUserNameEl = document.getElementById('dashUserName');
+            const userAvatarEl = document.getElementById('userAvatar');
+
+            if (userNameEl) userNameEl.textContent = user.displayName || user.email.split('@')[0];
+            if (dashUserNameEl) dashUserNameEl.textContent = user.displayName || user.email.split('@')[0];
+            if (userAvatarEl && user.photoURL) userAvatarEl.src = user.photoURL;
+
+            // Inicializar módulos privados con el UID del usuario
+            initAccountsManager(user);
+            initCraftingManager(user);
+            initTrackerManager(user);
+            initRaidsManager(user);
+        } else {
+            console.log("Ningún usuario autenticado. Mostrando login.");
+            if (loginContainer) loginContainer.style.display = 'flex';
+            if (appContainer) appContainer.style.display = 'none';
+
+            initAccountsManager(null);
+            initCraftingManager(null);
+            initTrackerManager(null);
+            initRaidsManager(null);
         }
     });
 }
-
-window.triggerAccountRender = () => renderAccounts();
