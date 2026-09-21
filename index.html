@@ -8,8 +8,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- THREE.JS CDN PARA UNIVERSO ANIMADO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+
+    <!-- CANVAS DEL UNIVERSO ANIMADO DE FONDO -->
+    <canvas id="universeCanvas"></canvas>
 
     <!-- ESTADO NO AUTENTICADO: PANTALLA DE LOGIN PRIVADA Y CENTRADA -->
     <div id="publicLoginContainer" class="login-screen-container">
@@ -429,6 +434,76 @@
             </form>
         </div>
     </div>
+
+    <!-- SCRIPT DEL UNIVERSO ANIMADO 3D -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('universeCanvas');
+            if (!canvas || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // GENERACIÓN DE ESTRELLAS EN 3D
+            const starsCount = 1200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(starsCount * 3);
+            const colors = new Float32Array(starsCount * 3);
+
+            const colorPalette = [
+                new THREE.Color('#ff0037'), // Neon Crimson
+                new THREE.Color('#e11d48'), // Ruby
+                new THREE.Color('#00f3ff'), // Cyan
+                new THREE.Color('#ffffff')  // Blanco
+            ];
+
+            for (let i = 0; i < starsCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 800;
+                positions[i + 1] = (Math.random() - 0.5) * 800;
+                positions[i + 2] = (Math.random() - 0.5) * 800;
+
+                const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                colors[i] = c.r;
+                colors[i + 1] = c.g;
+                colors[i + 2] = c.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 2.2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            const starField = new THREE.Points(geometry, material);
+            scene.add(starField);
+
+            camera.position.z = 400;
+
+            // ANIMACIÓN CONTINUA DE ORBITA Y ROTACIÓN
+            function animate() {
+                requestAnimationFrame(animate);
+                starField.rotation.x += 0.0003;
+                starField.rotation.y += 0.0005;
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        });
+    </script>
 
     <!-- SCRIPTS MODULARES -->
     <script type="module" src="js/firebase-config.js"></script>

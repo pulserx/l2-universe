@@ -1,8 +1,8 @@
 /* VARIABLES GLOBALES Y TEMA CYBERPUNK GAMING RED */
 :root {
-    --bg-dark: #0b0d12;
-    --card-bg: rgba(22, 26, 34, 0.92);
-    --border-color: rgba(255, 0, 55, 0.25);
+    --bg-dark: #07080c;
+    --card-bg: rgba(18, 22, 30, 0.82);
+    --border-color: rgba(255, 0, 55, 0.3);
     --neon-cyan: #ff0037;      /* Red Crimson Accent */
     --neon-purple: #e11d48;    /* Dark Ruby Accent */
     --neon-gold: #f59e0b;
@@ -26,6 +26,19 @@ body {
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
+    position: relative;
+}
+
+/* CANVAS DEL UNIVERSO ANIMADO FIJO DE FONDO */
+#universeCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(circle at center, #0f121d 0%, #050609 100%);
 }
 
 /* UTILIDADES Y CENTRADO */
@@ -97,7 +110,7 @@ body {
     right: 0;
     top: 45px;
     width: 300px;
-    background: rgba(22, 26, 34, 0.98);
+    background: rgba(18, 22, 30, 0.96);
     border: 1px solid var(--neon-cyan);
     border-radius: 10px;
     padding: 0.75rem;
@@ -137,7 +150,6 @@ body {
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
-    background: radial-gradient(circle at center, rgba(255, 0, 55, 0.08) 0%, rgba(11, 13, 18, 0.95) 70%);
 }
 
 .login-card {
@@ -145,9 +157,10 @@ body {
     max-width: 420px;
     padding: 2rem;
     border: 1px solid var(--neon-cyan);
-    box-shadow: 0 0 30px rgba(255, 0, 55, 0.25);
+    box-shadow: 0 0 35px rgba(255, 0, 55, 0.3);
     border-radius: 16px;
-    background: rgba(22, 26, 34, 0.95);
+    background: rgba(18, 22, 30, 0.88);
+    backdrop-filter: blur(12px);
 }
 
 .login-header {
@@ -242,9 +255,9 @@ body {
 }
 
 .navbar {
-    background: rgba(11, 13, 18, 0.95);
+    background: rgba(11, 13, 18, 0.85);
     border-bottom: 1px solid var(--border-color);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -395,7 +408,7 @@ body {
     margin-bottom: 0.25rem;
 }
 
-/* ESTILO VISUAL DE CAMPOS DE TEXTO E INPUTS (SIN FONDO BLANCO) */
+/* ESTILO VISUAL DE CAMPOS DE TEXTO E INPUTS */
 .form-control,
 input[type="text"],
 input[type="password"],
@@ -406,8 +419,8 @@ select,
 textarea {
     width: 100%;
     padding: 0.65rem 0.8rem;
-    background-color: #121216 !important;
-    border: 1px solid #33333e !important;
+    background-color: #10121a !important;
+    border: 1px solid #2e3346 !important;
     border-radius: 6px;
     color: #ffffff !important;
     outline: none;
@@ -419,7 +432,7 @@ input:focus,
 select:focus,
 textarea:focus {
     border-color: var(--neon-cyan) !important;
-    background-color: #181820 !important;
+    background-color: #161a26 !important;
     color: #ffffff !important;
     box-shadow: 0 0 8px rgba(255, 0, 55, 0.3);
 }
@@ -434,7 +447,7 @@ select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
     -webkit-text-fill-color: #ffffff !important;
-    -webkit-box-shadow: 0 0 0px 1000px #121216 inset !important;
+    -webkit-box-shadow: 0 0 0px 1000px #10121a inset !important;
     transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -467,7 +480,7 @@ select:-webkit-autofill:focus {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.25rem;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
 }
 
 .border-cyan { border-color: var(--neon-cyan); }
@@ -556,6 +569,7 @@ select:-webkit-autofill:focus {
     top: 0; left: 0;
     width: 100vw; height: 100vh;
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -563,12 +577,12 @@ select:-webkit-autofill:focus {
 }
 
 .modal-card {
-    background: #161a22;
+    background: #141822;
     border: 1px solid var(--neon-cyan);
     border-radius: 12px;
     width: 90%; max-width: 420px;
     padding: 1.5rem;
-    box-shadow: 0 0 25px rgba(255, 0, 55, 0.25);
+    box-shadow: 0 0 30px rgba(255, 0, 55, 0.3);
 }
 
 .modal-header {
@@ -588,7 +602,8 @@ select:-webkit-autofill:focus {
 /* FOOTER INFERIOR CON TEXTO CENTRADO Y FIRMA A LA DERECHA */
 .footer {
     border-top: 1px solid var(--border-color);
-    background: rgba(11, 13, 18, 0.95);
+    background: rgba(11, 13, 18, 0.88);
+    backdrop-filter: blur(10px);
     padding: 1.25rem 0;
     margin-top: auto;
     width: 100%;
