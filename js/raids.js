@@ -3,7 +3,7 @@ import {
     collection, addDoc, deleteDoc, doc, onSnapshot, query, updateDoc, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// BASE DE DATOS EXTENDIDA DE RAID BOSSES CON IMÁGENES Y GUÍAS DE ACCESO
+// BASE DE DATOS DE RAID BOSSES CON ÍCONOS VECTORIALES ROBUSTOS
 export const RAID_BOSSES_DB = [
     {
         id: 'valakas',
@@ -12,7 +12,8 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Valakas Lair (Goddard)',
         respawnHours: 264,
-        image: 'https://l2wiki.com/images/1/1d/Valakas.jpg',
+        iconClass: 'fa-dragon',
+        color: '#ef4444',
         guide: 'Paso 1: Teleport a Goddard -> Forge of the Gods. Paso 2: Atraviesa la zona de lava hasta el NPC Klein. Paso 3: Entrega el ítem "Floating Stone" (Quest Into the Flame) e ingresa al pasillo que lleva a la cueva de Valakas.'
     },
     {
@@ -22,7 +23,8 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Antharas Lair (Giran)',
         respawnHours: 192,
-        image: 'https://l2wiki.com/images/3/30/Antharas.jpg',
+        iconClass: 'fa-dragon',
+        color: '#10b981',
         guide: 'Paso 1: Teleport a Giran -> Dragon Valley. Paso 2: Corre hacia el fondo del mapa hasta ingresar a Antharas Lair. Paso 3: Habla con el Heart of Volcano con la "Portal Stone" (Quest Audience with the Land Dragon).'
     },
     {
@@ -32,7 +34,8 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Tower of Insolence Piso 14',
         respawnHours: 120,
-        image: 'https://l2wiki.com/images/6/62/Baium.jpg',
+        iconClass: 'fa-crown',
+        color: '#f59e0b',
         guide: 'Paso 1: Teleport a Aden -> Tower of Insolence. Paso 2: Sube hasta el Piso 13 por los portales. Paso 3: Usa la Angelic Vortex con la "Blooded Fabric" (Quest An Arrogant Search) para entrar a la sala del Trono del Rey Baium.'
     },
     {
@@ -42,8 +45,9 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Devil\'s Isle (Giran)',
         respawnHours: 48,
-        image: 'https://l2wiki.com/images/9/91/Zakken.jpg',
-        guide: 'Paso 1: Teleport desde Giran hacia Devil\'s Isle. Paso 2: Atraviesa la cueva pirata nadando por los túneles hasta la nave central. Paso 3: Entra al barco en la sala interior al medianoche del tiempo del juego.'
+        iconClass: 'fa-skull-crossbones',
+        color: '#8b5cf6',
+        guide: 'Paso 1: Teleport desde Giran hacia Devil\'s Isle. Paso 2: Atraviesa la cueva pirata nadando por los túneles hasta la nave central. Paso 3: Entra al barco en la sala interior a medianoche del tiempo del juego.'
     },
     {
         id: 'queen_ant',
@@ -52,8 +56,9 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Ant Nest (Gludio)',
         respawnHours: 36,
-        image: 'https://l2wiki.com/images/c/c8/Queen_Ant.jpg',
-        guide: 'Paso 1: Teleport desde Gludio hacia Ant Nest. Paso 2: Sigue el camino hacia las profundidades del hormiguero. Paso 3: Entra a la cámara real limpia de larvas sin llevar PJs de nivel superior al 48 para evitar la petrificación.'
+        iconClass: 'fa-bug',
+        color: '#ff0037',
+        guide: 'Paso 1: Teleport desde Gludio hacia Ant Nest. Paso 2: Sigue el camino hacia las profundidades del hormiguero. Paso 3: Entra a la cámara real limpia de larvas sin llevar PJs de nivel superior al 48.'
     },
     {
         id: 'frintezza',
@@ -62,8 +67,9 @@ export const RAID_BOSSES_DB = [
         type: 'EPIC',
         location: 'Imperial Tomb (Goddard)',
         respawnHours: 48,
-        image: 'https://l2wiki.com/images/0/0e/Frintezza.jpg',
-        guide: 'Paso 1: Teleport a Goddard -> Imperial Tomb. Paso 2: Consigue el Frintezza Magic Force Field Removal Scroll (Quest Last Imperial Prince). Paso 3: Ingresa en Command Channel de 4 a 5 partys para activar la sinfonía.'
+        iconClass: 'fa-music',
+        color: '#00f3ff',
+        guide: 'Paso 1: Teleport a Goddard -> Imperial Tomb. Paso 2: Consigue el Frintezza Magic Force Field Removal Scroll. Paso 3: Ingresa en Command Channel de 4 a 5 partys para activar la sinfonía.'
     },
     {
         id: 'barakiel',
@@ -72,7 +78,8 @@ export const RAID_BOSSES_DB = [
         type: '76-80',
         location: 'Valley of Saints (Rune)',
         respawnHours: 18,
-        image: 'https://l2wiki.com/images/7/7b/Item_6885.png',
+        iconClass: 'fa-fire-flame-curved',
+        color: '#f59e0b',
         guide: 'Paso 1: Teleport a Rune -> Valley of Saints. Paso 2: Sigue la quebrada norte hacia la cima de la colina. Esencial para la Quest de Noblesse (Staff of Goddess).'
     },
     {
@@ -82,7 +89,8 @@ export const RAID_BOSSES_DB = [
         type: '80+',
         location: 'Varka Silenos Outpost',
         respawnHours: 24,
-        image: 'https://l2wiki.com/images/a/a2/Item_6379.png',
+        iconClass: 'fa-shield-cat',
+        color: '#ef4444',
         guide: 'Paso 1: Teleport desde Goddard a Varka Silenos Settlement. Paso 2: Adéntrate en el campamento central con Alianza Ketra Nivel 3 o superior para invocar al jefe.'
     }
 ];
@@ -104,24 +112,24 @@ export function initRaidsManager(user) {
         return;
     }
 
-    const timersRef = collection(db, 'users', user.uid, 'raid_timers');
-    raidTimersUnsubscribe = onSnapshot(query(timersRef), (snapshot) => {
-        activeRaidTimers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderRaidBosses();
-        checkRaidSpawnsAndNotify();
-    });
+    try {
+        const timersRef = collection(db, 'users', user.uid, 'raid_timers');
+        raidTimersUnsubscribe = onSnapshot(query(timersRef), (snapshot) => {
+            activeRaidTimers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderRaidBosses();
+            checkRaidSpawnsAndNotify();
+        });
+    } catch (e) {
+        console.error("Error inicializando Raid Timers:", e);
+    }
 }
 
 function setupRaidSearchAndFilters() {
     const searchInput = document.getElementById('raidSearchInput');
     const filterSelect = document.getElementById('raidLevelFilter');
 
-    if (searchInput) {
-        searchInput.oninput = () => renderRaidBosses();
-    }
-    if (filterSelect) {
-        filterSelect.onchange = () => renderRaidBosses();
-    }
+    if (searchInput) searchInput.oninput = () => renderRaidBosses();
+    if (filterSelect) filterSelect.onchange = () => renderRaidBosses();
 }
 
 export function renderRaidBosses() {
@@ -169,7 +177,9 @@ export function renderRaidBosses() {
         return `
             <div class="card raid-card">
                 <div class="d-flex gap-3 align-items-center mb-2">
-                    <img src="${rb.image}" class="raid-boss-img" alt="${rb.name}" onerror="this.src='https://l2wiki.com/images/7/7b/Item_6885.png'">
+                    <div class="raid-icon-avatar" style="background: rgba(255, 0, 55, 0.1); border: 1px solid ${rb.color}; padding: 0.8rem; border-radius: 8px;">
+                        <i class="fa-solid ${rb.iconClass}" style="color: ${rb.color}; font-size: 1.8rem;"></i>
+                    </div>
                     <div>
                         <span class="badge ${rb.type === 'EPIC' ? 'badge-purple' : 'badge-cyan'}">Lvl ${rb.level} ${rb.type}</span>
                         <h3 class="mt-1">${rb.name}</h3>

@@ -93,7 +93,9 @@
                         </div>
                     </div>
 
-                    <img id="userAvatar" src="https://via.placeholder.com/40" alt="Avatar" class="user-avatar">
+                    <div class="user-avatar-placeholder" style="width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--neon-cyan); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);">
+                        <i class="fa-solid fa-user text-cyan"></i>
+                    </div>
                     <span id="userName" class="user-name font-mono">Cargando...</span>
                     <button class="btn-icon danger" onclick="window.handleLogout()" title="Cerrar Sesión">
                         <i class="fa-solid fa-right-from-bracket"></i>
@@ -157,7 +159,7 @@
                 </div>
 
                 <div id="accountsGrid" class="accounts-grid">
-                    <!-- Renderizado dinámico desde accounts-manager.js -->
+                    <!-- Renderizado dinámico -->
                 </div>
             </section>
 
@@ -170,7 +172,6 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN PROGRESO Y ESTADÍSTICAS DE CRAFT -->
                 <div class="craft-stats-summary card mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h3><i class="fa-solid fa-chart-pie text-cyan"></i> Progreso de Crafteo</h3>
@@ -224,56 +225,49 @@
                             <h3><i class="fa-solid fa-plus-circle text-cyan"></i> Registrar Farmeo de Hoy</h3>
                             <form id="formAddFarmLog" class="mt-3">
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/a/a2/Item_0057.png" class="l2-mini-icon"> Adena</label>
+                                    <label><i class="fa-solid fa-coins text-gold me-1"></i> Adena</label>
                                     <input type="number" id="farmAdena" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/e/e0/Item_5575.png" class="l2-mini-icon"> Ancient Adena</label>
+                                    <label><i class="fa-solid fa-gem text-purple me-1"></i> Ancient Adena</label>
                                     <input type="number" id="farmAncientAdena" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/4/47/Item_3703.png" class="l2-mini-icon"> Donate Coins</label>
+                                    <label><i class="fa-solid fa-circle-dollar-to-slot text-cyan me-1"></i> Donate Coins</label>
                                     <input type="number" id="farmDonateCoins" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Life Stone lvl 76</label>
+                                    <label><i class="fa-solid fa-cubes text-green me-1"></i> Life Stone lvl 76</label>
                                     <input type="number" id="farmLifeStone76" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Mid's Life Stone lvl 76</label>
+                                    <label><i class="fa-solid fa-cubes text-green me-1"></i> Mid's Life Stone lvl 76</label>
                                     <input type="number" id="farmMidLifeStone76" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/5/52/Item_8742.png" class="l2-mini-icon"> Top Life Stone lvl 76</label>
+                                    <label><i class="fa-solid fa-cubes text-green me-1"></i> Top Life Stone lvl 76</label>
                                     <input type="number" id="farmTopLifeStone76" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/1/1a/Item_6622.png" class="l2-mini-icon"> Giant's Codex / Box Codex</label>
+                                    <label><i class="fa-solid fa-book text-gold me-1"></i> Giant's Codex / Box Codex</label>
                                     <input type="number" id="farmGiantsCodex" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><img src="https://l2wiki.com/images/a/a9/Item_0959.png" class="l2-mini-icon"> Scrolls (Enchants A/S, BSS, Wears, etc.)</label>
+                                    <label><i class="fa-solid fa-scroll text-cyan me-1"></i> Scrolls (Enchants A/S, BSS, Wears, etc.)</label>
                                     <input type="number" id="farmScrolls" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label><i class="fa-solid fa-font text-cyan"></i> Letras (L - I - N - E - A - G - E)</label>
+                                    <label><i class="fa-solid fa-font text-cyan me-1"></i> Letras (L - I - N - E - A - G - E)</label>
                                     <input type="number" id="farmLetters" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <div class="form-group mb-3">
-                                    <label><i class="fa-solid fa-heart text-cyan"></i> Corazones (1 al 9)</label>
+                                    <label><i class="fa-solid fa-heart text-cyan me-1"></i> Corazones (1 al 9)</label>
                                     <input type="number" id="farmHearts" class="form-control" placeholder="0" min="0">
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fa-solid fa-floppy-disk"></i> Guardar Jornada
                                 </button>
                             </form>
-                        </div>
-
-                        <div class="card">
-                            <h3><i class="fa-solid fa-chart-line text-purple"></i> Proyección de Metas</h3>
-                            <div id="farmProjectionContainer" class="mt-3">
-                                <!-- Generado por JS -->
-                            </div>
                         </div>
                     </div>
 
