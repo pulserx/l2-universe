@@ -5,9 +5,6 @@ import {
     onSnapshot, 
     doc, 
     deleteDoc, 
-    updateDoc, 
-    arrayUnion, 
-    arrayRemove, 
     query, 
     orderBy, 
     serverTimestamp 
@@ -15,25 +12,28 @@ import {
 
 let currentUser = null;
 let accountsList = [];
-let unsubscribeListener = null;
+let unsubscribeAccounts = null;
 
 export function initAccountsManager(user) {
     currentUser = user;
-    if (unsubscribeListener) {
-        unsubscribeListener();
-        unsubscribeListener = null;
+    if (unsubscribeAccounts) {
+        unsubscribeAccounts();
+        unsubscribeAccounts = null;
     }
+
+    setupAccountFormHandler();
 
     if (!user) {
         accountsList = [];
         renderAccounts();
+        updateDashboardAccountsCount();
         return;
     }
 
     const accountsRef = collection(db, 'users', user.uid, 'accounts');
     const q = query(accountsRef, orderBy('createdAt', 'desc'));
 
-    unsubscribeListener = onSnapshot(q, (snapshot) => {
+    unsubscribeAccounts = onSnapshot(q, (snapshot) => {
         accountsList = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -43,167 +43,125 @@ export function initAccountsManager(user) {
         renderAccounts();
         updateDashboardAccountsCount();
     }, (error) => {
-        console.error("Error al escuchar cuentas en Firestore:", error);
+        console.error("Error al escuchar cuentas:", error);
     });
 }
 
-export async function createAccount({ server, chronicle, username, secretNotes }) {
-    if (!currentUser) throw new Error("Usuario no autenticado");
+function setupAccountFormHandler() {
+    const form = document.getElementById('formAddAccount');
+    if (!form) return;
 
-    const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
-    await addDoc(accountsRef, {
-        server,
-        chronicle,
-        username,
-        secretNotes: secretNotes || '',
-        characters: [],
-        createdAt: serverTimestamp()
-    });
-}
+    form.onsubmit = async (e) => {
+        e.preventDefault(); // Evita que la página recargue y vuelva al inicio sin guardar
 
-export async function addCharacterToAccount(accountId, { name, className, level, equipment }) {
-    if (!currentUser) throw new Error("Usuario no autenticado");
+        if (!currentUser) {
+            alert("Debes iniciar sesión para guardar cuentas.");
+            return;
+        }
 
-    const accDocRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
-    const newChar = {
-        id: 'char_' + Date.now(),
-        name,
-        className,
-        level: Number(level) || 80,
-        equipment: equipment || ''
+        const server = document.getElementById('accServer').value.trim();
+        const chronicle = document.getElementById('accChronicle').value.trim();
+        const username = document.getElementById('accUsername').value.trim();
+        const notes = document.getElementById('accNotes').value.trim();
+
+        if (!server || !chronicle || !username) {
+            alert("Por favor completa los campos obligatorios.");
+            return;
+        }
+
+        const newAccount = {
+            server,
+            chronicle,
+            username,
+            notes,
+            characters: [],
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
+            await addDoc(accountsRef, newAccount);
+            
+            form.reset();
+            window.closeModal('addAccountModal');
+            window.addNotification(`✅ Cuenta "${username}" guardada con éxito.`);
+        } catch (err) {
+            console.error("Error al guardar cuenta en Firebase:", err);
+            alert("Error al guardar la cuenta en la base de datos.");
+        }
     };
-
-    await updateDoc(accDocRef, {
-        characters: arrayUnion(newChar)
-    });
 }
 
-export async function removeCharacterFromAccount(accountId, characterObj) {
+window.deleteAccount = async (accountId) => {
     if (!currentUser) return;
-
-    const accDocRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
-    await updateDoc(accDocRef, {
-        characters: arrayRemove(characterObj)
-    });
-}
-
-export async function deleteAccount(accountId) {
-    if (!currentUser) return;
-    if (confirm("¿Estás seguro de eliminar esta cuenta y todos sus personajes?")) {
-        const accDocRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
-        await deleteDoc(accDocRef);
-    }
-}
-
-window.openAddCharModal = (accountId) => {
-    const inputAccId = document.getElementById('charAccountId');
-    if (inputAccId) inputAccId.value = accountId;
-
-    const modal = document.getElementById('addCharModal');
-    if (modal) {
-        modal.style.display = 'flex';
+    if (confirm("¿Estás seguro de eliminar esta cuenta y sus personajes?")) {
+        try {
+            const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
+            await deleteDoc(docRef);
+            window.addNotification("🗑️ Cuenta eliminada correctamente.");
+        } catch (err) {
+            console.error("Error al eliminar cuenta:", err);
+        }
     }
 };
 
-window.deleteAccountClick = (accountId) => deleteAccount(accountId);
-
-window.removeCharacterClick = (accountId, charId) => {
-    const acc = accountsList.find(a => a.id === accountId);
-    if (!acc) return;
-    const charObj = (acc.characters || []).find(c => c.id === charId);
-    if (charObj) {
-        removeCharacterFromAccount(accountId, charObj);
-    }
+window.triggerAccountRender = () => {
+    renderAccounts();
 };
 
 function updateServerFilterOptions() {
-    const filterSelect = document.getElementById('accountServerFilter');
-    if (!filterSelect) return;
+    const select = document.getElementById('accountServerFilter');
+    if (!select) return;
 
-    const currentVal = filterSelect.value;
-    const servers = [...new Set(accountsList.map(a => a.server))];
-
+    const servers = [...new Set(accountsList.map(acc => acc.server))];
     let html = `<option value="ALL">Todos los Servidores</option>`;
-    servers.forEach(srv => {
-        html += `<option value="${srv}" ${srv === currentVal ? 'selected' : ''}>${srv}</option>`;
+    servers.forEach(s => {
+        html += `<option value="${s}">${s}</option>`;
     });
-
-    filterSelect.innerHTML = html;
+    select.innerHTML = html;
 }
 
 export function renderAccounts() {
     const grid = document.getElementById('accountsGrid');
     if (!grid) return;
 
-    const filterSelect = document.getElementById('accountServerFilter');
-    const selectedServer = filterSelect ? filterSelect.value : 'ALL';
-
-    const filtered = selectedServer === 'ALL' 
-        ? accountsList 
-        : accountsList.filter(a => a.server === selectedServer);
+    const filterVal = document.getElementById('accountServerFilter')?.value || 'ALL';
+    const filtered = filterVal === 'ALL' ? accountsList : accountsList.filter(acc => acc.server === filterVal);
 
     if (filtered.length === 0) {
         grid.innerHTML = `
-            <div class="card text-center py-4 w-100">
-                <p class="text-muted"><i class="fa-solid fa-folder-open mb-2 fs-lg"></i><br>No hay cuentas guardadas para mostrar.</p>
+            <div class="card text-center py-5 w-100">
+                <p class="text-muted"><i class="fa-solid fa-users-gear mb-2 fs-lg"></i><br>No hay cuentas registradas.<br>Haz clic en "Nueva Cuenta" para comenzar.</p>
             </div>
         `;
         return;
     }
 
-    grid.innerHTML = filtered.map(acc => {
-        const chars = acc.characters || [];
-        return `
-            <div class="account-card card border-cyan">
-                <div class="account-card-header d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <span class="badge badge-purple">${acc.chronicle}</span>
-                        <h3 class="account-title mt-1"><i class="fa-solid fa-server text-cyan"></i> ${acc.server}</h3>
-                    </div>
-                    <button class="btn-icon danger" onclick="window.deleteAccountClick('${acc.id}')" title="Eliminar Cuenta">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+    grid.innerHTML = filtered.map(acc => `
+        <div class="card account-card border-cyan">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="badge badge-purple" style="font-size: 0.7rem;">${acc.chronicle}</span>
+                    <h3 class="text-cyan mt-1">${acc.server}</h3>
                 </div>
-
-                <div class="account-info mb-3">
-                    <p><strong>Login ID:</strong> <span class="font-mono text-gold">${acc.username}</span></p>
-                    ${acc.secretNotes ? `<p class="text-muted fs-sm mt-1"><i class="fa-solid fa-note-sticky"></i> ${acc.secretNotes}</p>` : ''}
-                </div>
-
-                <div class="characters-section">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="fs-sm"><i class="fa-solid fa-users text-cyan"></i> Personajes (${chars.length})</strong>
-                        <button class="btn btn-sm btn-outline" onclick="window.openAddCharModal('${acc.id}')">
-                            <i class="fa-solid fa-user-plus"></i> Añadir PJ
-                        </button>
-                    </div>
-
-                    <div class="characters-list">
-                        ${chars.length === 0 ? '<p class="text-muted fs-sm italic">Sin personajes asociados.</p>' : ''}
-                        ${chars.map(c => `
-                            <div class="character-item card mb-2 p-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong class="text-cyan">${c.name}</strong> 
-                                        <span class="fs-sm text-muted">(Lv. ${c.level}${c.className})</span>
-                                    </div>
-                                    <button class="btn-icon-sm danger" onclick="window.removeCharacterClick('${acc.id}', '${c.id}')" title="Eliminar PJ">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                                ${c.equipment ? `<p class="fs-xs text-gold mt-1 mb-0"><i class="fa-solid fa-shield-halved"></i> ${c.equipment}</p>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
+                <button class="btn-icon danger" onclick="window.deleteAccount('${acc.id}')" title="Eliminar Cuenta">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
             </div>
-        `;
-    }).join('');
+            <p class="font-mono text-muted fs-sm mb-2"><i class="fa-solid fa-user me-1"></i> User: <strong>${acc.username}</strong></p>
+            ${acc.notes ? `<p class="fs-sm mb-3 text-muted"><em>${acc.notes}</em></p>` : ''}
+            
+            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top" style="border-color: rgba(255,255,255,0.05);">
+                <span class="text-muted fs-sm">Personajes guardados</span>
+                <button class="btn btn-outline btn-sm" onclick="window.openAddCharModal('${acc.id}')">
+                    <i class="fa-solid fa-plus"></i> Añadir PJ
+                </button>
+            </div>
+        </div>
+    `).join('');
 }
 
 function updateDashboardAccountsCount() {
-    const dashCount = document.getElementById('dashAccountsCount');
-    if (dashCount) {
-        dashCount.textContent = accountsList.length;
-    }
+    const countEl = document.getElementById('dashAccountsCount');
+    if (countEl) countEl.textContent = accountsList.length;
 }

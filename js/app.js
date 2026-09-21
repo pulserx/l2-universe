@@ -137,6 +137,7 @@ function setupAuthListeners() {
     window.handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' }); // Fuerza a preguntar con qué cuenta entrar
             await signInWithPopup(auth, provider);
             window.addNotification("🚀 Conectado exitosamente con Google.");
         } catch (error) {
