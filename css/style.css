@@ -1,7 +1,7 @@
 /* VARIABLES GLOBALES Y TEMA CYBERPUNK GAMING RED */
 :root {
-    --bg-dark: #07080c;
-    --card-bg: rgba(18, 22, 30, 0.82);
+    --bg-dark: #050608;
+    --card-bg: rgba(12, 15, 22, 0.82);
     --border-color: rgba(255, 0, 55, 0.3);
     --neon-cyan: #ff0037;      /* Red Crimson Accent */
     --neon-purple: #e11d48;    /* Dark Ruby Accent */
@@ -29,7 +29,7 @@ body {
     position: relative;
 }
 
-/* CANVAS DEL UNIVERSO ANIMADO FIJO DE FONDO */
+/* CANVAS Y FONDO DEL UNIVERSO PROFUNDO */
 #universeCanvas {
     position: fixed;
     top: 0;
@@ -38,7 +38,8 @@ body {
     height: 100vh;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(circle at center, #0f121d 0%, #050609 100%);
+    /* Fondo realista del cosmos con degradado profundo */
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
 }
 
 /* UTILIDADES Y CENTRADO */
@@ -125,7 +126,7 @@ body {
     right: 0;
     top: 45px;
     width: 300px;
-    background: rgba(18, 22, 30, 0.96);
+    background: rgba(12, 15, 22, 0.96);
     border: 1px solid var(--neon-cyan);
     border-radius: 10px;
     padding: 0.75rem;
@@ -174,7 +175,7 @@ body {
     border: 1px solid var(--neon-cyan);
     box-shadow: 0 0 35px rgba(255, 0, 55, 0.3);
     border-radius: 16px;
-    background: rgba(18, 22, 30, 0.88);
+    background: rgba(12, 15, 22, 0.88);
     backdrop-filter: blur(12px);
 }
 
@@ -264,7 +265,7 @@ body {
 }
 
 .navbar {
-    background: rgba(11, 13, 18, 0.85);
+    background: rgba(8, 10, 15, 0.85);
     border-bottom: 1px solid var(--border-color);
     backdrop-filter: blur(12px);
     position: sticky;
@@ -423,8 +424,8 @@ select,
 textarea {
     width: 100%;
     padding: 0.65rem 0.8rem;
-    background-color: #10121a !important;
-    border: 1px solid #2e3346 !important;
+    background-color: #0c0e14 !important;
+    border: 1px solid #232838 !important;
     border-radius: 6px;
     color: #ffffff !important;
     outline: none;
@@ -436,7 +437,7 @@ input:focus,
 select:focus,
 textarea:focus {
     border-color: var(--neon-cyan) !important;
-    background-color: #161a26 !important;
+    background-color: #121622 !important;
     color: #ffffff !important;
     box-shadow: 0 0 8px rgba(255, 0, 55, 0.3);
 }
@@ -451,7 +452,7 @@ select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
     -webkit-text-fill-color: #ffffff !important;
-    -webkit-box-shadow: 0 0 0px 1000px #10121a inset !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0c0e14 inset !important;
     transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -581,7 +582,7 @@ select:-webkit-autofill:focus {
 }
 
 .modal-card {
-    background: #141822;
+    background: #0f121a;
     border: 1px solid var(--neon-cyan);
     border-radius: 12px;
     width: 90%; max-width: 420px;
@@ -606,7 +607,7 @@ select:-webkit-autofill:focus {
 /* FOOTER INFERIOR CON TEXTO CENTRADO Y FIRMA A LA DERECHA */
 .footer {
     border-top: 1px solid var(--border-color);
-    background: rgba(11, 13, 18, 0.88);
+    background: rgba(8, 10, 15, 0.88);
     backdrop-filter: blur(10px);
     padding: 1.25rem 0;
     margin-top: auto;

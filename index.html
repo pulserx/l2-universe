@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <!-- THREE.JS CDN PARA UNIVERSO ANIMADO -->
+    <!-- THREE.JS CDN PARA UNIVERSO ANIMADO PRIVADO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -441,83 +441,107 @@
         </div>
     </div>
 
-    <!-- SCRIPT DEL UNIVERSO ANIMADO REALISTA EN 3D -->
+    <!-- SCRIPT DE ESTRELLAS REALISTAS MULTICAPA 3D EN CASCADA SUAVE -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('universeCanvas');
             if (!canvas || typeof THREE === 'undefined') return;
 
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 1000);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
             const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
 
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // MAPA DE TEXTURA DE LUZ DEGRADADA REALISTA (GLOW GAUSSIANO)
-            function createRealisticStarTexture() {
-                const canvasTexture = document.createElement('canvas');
-                canvasTexture.width = 64;
-                canvasTexture.height = 64;
-                const ctx = canvasTexture.getContext('2d');
+            // MAPA DE TEXTURA CON LUZ SOFT-GLOW (PUNTO ESTELAR REALISTA)
+            function generateGlowPointTexture() {
+                const c = document.createElement('canvas');
+                c.width = 64;
+                c.height = 64;
+                const ctx = c.getContext('2d');
 
-                const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-                gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.85)');
-                gradient.addColorStop(0.5, 'rgba(200, 220, 255, 0.35)');
-                gradient.addColorStop(0.8, 'rgba(130, 160, 255, 0.08)');
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                g.addColorStop(0.15, 'rgba(255, 255, 255, 0.9)');
+                g.addColorStop(0.4, 'rgba(220, 235, 255, 0.4)');
+                g.addColorStop(0.7, 'rgba(160, 180, 255, 0.1)');
+                g.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-                ctx.fillStyle = gradient;
+                ctx.fillStyle = g;
                 ctx.fillRect(0, 0, 64, 64);
-
-                return new THREE.CanvasTexture(canvasTexture);
+                return new THREE.CanvasTexture(c);
             }
 
-            const starTexture = createRealisticStarTexture();
+            const starTexture = generateGlowPointTexture();
 
-            // TEMPERATURAS Y COLORES ESTELARES REALES
-            const starColors = [
-                new THREE.Color('#ffffff'), // Blanco brillante
-                new THREE.Color('#e0e8ff'), // Azul estelar tenue
-                new THREE.Color('#fff2d6'), // Dorado / Cálido
-                new THREE.Color('#d4e5ff'), // Cyan galáctico suave
-                new THREE.Color('#f2cbff')  // Violeta tenue
+            // PALETA DE PALETA DE TEMPERATURAS ESTELARES (ASTRONÓMICAS)
+            const starPalette = [
+                new THREE.Color('#ffffff'), // Blanca
+                new THREE.Color('#b9d5ff'), // Azul gigante
+                new THREE.Color('#ffdca8'), // Enana amarilla / dorada
+                new THREE.Color('#f7c8ff'), // Destello cian / magenta tenue
+                new THREE.Color('#9eeaff')  // Azul cosmos
             ];
 
-            // CREACIÓN DE CAMPO DE ESTRELLAS CON PARPADEO Y TAMAÑOS VARIABLES
-            const starsCount = 800;
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(starsCount * 3);
-            const colors = new Float32Array(starsCount * 3);
-            const sizes = new Float32Array(starsCount);
-            
-            const twinklePhases = new Float32Array(starsCount);
-            const twinkleSpeeds = new Float32Array(starsCount);
-            const fallSpeeds = new Float32Array(starsCount);
+            // 1. CAPA DE ESTRELLAS DISTANTES (PROFUNDIDAD SUTIL)
+            const countFar = 600;
+            const geomFar = new THREE.BufferGeometry();
+            const posFar = new Float32Array(countFar * 3);
+            const colFar = new Float32Array(countFar * 3);
 
-            for (let i = 0; i < starsCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 900;     // X
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 900; // Y
-                positions[i * 3 + 2] = -50 - Math.random() * 500;   // Z Profundidad
+            for (let i = 0; i < countFar; i++) {
+                posFar[i * 3] = (Math.random() - 0.5) * 1000;
+                posFar[i * 3 + 1] = (Math.random() - 0.5) * 1000;
+                posFar[i * 3 + 2] = -200 - Math.random() * 400;
 
-                const color = starColors[Math.floor(Math.random() * starColors.length)];
-                colors[i * 3] = color.r;
-                colors[i * 3 + 1] = color.g;
-                colors[i * 3 + 2] = color.b;
-
-                sizes[i] = 1.2 + Math.random() * 3.8;
-
-                twinklePhases[i] = Math.random() * Math.PI * 2;
-                twinkleSpeeds[i] = 0.01 + Math.random() * 0.03;
-                fallSpeeds[i] = 0.08 + Math.random() * 0.15; // Caída lenta y pasiva
+                const col = starPalette[Math.floor(Math.random() * starPalette.length)];
+                colFar[i * 3] = col.r;
+                colFar[i * 3 + 1] = col.g;
+                colFar[i * 3 + 2] = col.b;
             }
 
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geomFar.setAttribute('position', new THREE.BufferAttribute(posFar, 3));
+            geomFar.setAttribute('color', new THREE.BufferAttribute(colFar, 3));
 
-            const starMaterial = new THREE.PointsMaterial({
-                size: 3.0,
+            const matFar = new THREE.PointsMaterial({
+                size: 2.0,
+                map: starTexture,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.65,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            const farStarsMesh = new THREE.Points(geomFar, matFar);
+            scene.add(farStarsMesh);
+
+            // 2. CAPA DE ESTRELLAS PRINCIPALES EN CASCADA SUAVE
+            const countNear = 350;
+            const geomNear = new THREE.BufferGeometry();
+            const posNear = new Float32Array(countNear * 3);
+            const colNear = new Float32Array(countNear * 3);
+            const fallSpeeds = new Float32Array(countNear);
+
+            for (let i = 0; i < countNear; i++) {
+                posNear[i * 3] = (Math.random() - 0.5) * 900;
+                posNear[i * 3 + 1] = (Math.random() - 0.5) * 900;
+                posNear[i * 3 + 2] = -50 - Math.random() * 200;
+
+                const col = starPalette[Math.floor(Math.random() * starPalette.length)];
+                colNear[i * 3] = col.r;
+                colNear[i * 3 + 1] = col.g;
+                colNear[i * 3 + 2] = col.b;
+
+                fallSpeeds[i] = 0.05 + Math.random() * 0.12; // Lenta caída natural
+            }
+
+            geomNear.setAttribute('position', new THREE.BufferAttribute(posNear, 3));
+            geomNear.setAttribute('color', new THREE.BufferAttribute(colNear, 3));
+
+            const matNear = new THREE.PointsMaterial({
+                size: 3.8,
                 map: starTexture,
                 vertexColors: true,
                 transparent: true,
@@ -526,106 +550,32 @@
                 depthWrite: false
             });
 
-            const starField = new THREE.Points(geometry, starMaterial);
-            scene.add(starField);
+            const nearStarsMesh = new THREE.Points(geomNear, matNear);
+            scene.add(nearStarsMesh);
 
-            // SISTEMA DE ESTRELLAS FUGACES / COMETAS REALISTAS
-            const shootingStars = [];
-            const maxShootingStars = 2;
-
-            function createShootingStarTexture() {
-                const canvasTexture = document.createElement('canvas');
-                canvasTexture.width = 128;
-                canvasTexture.height = 16;
-                const ctx = canvasTexture.getContext('2d');
-
-                const gradient = ctx.createLinearGradient(0, 8, 128, 8);
-                gradient.addColorStop(0, 'rgba(0,0,0,0)');
-                gradient.addColorStop(0.6, 'rgba(255, 100, 150, 0.2)');
-                gradient.addColorStop(0.9, 'rgba(200, 220, 255, 0.7)');
-                gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
-
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, 128, 16);
-
-                return new THREE.CanvasTexture(canvasTexture);
-            }
-
-            const shootingTexture = createShootingStarTexture();
-
-            function spawnShootingStar() {
-                const spriteMaterial = new THREE.SpriteMaterial({
-                    map: shootingTexture,
-                    transparent: true,
-                    opacity: 0.9,
-                    blending: THREE.AdditiveBlending
-                });
-
-                const sprite = new THREE.Sprite(spriteMaterial);
-                
-                const startX = (Math.random() - 0.7) * 800;
-                const startY = 300 + Math.random() * 100;
-                const startZ = -100 - Math.random() * 200;
-
-                sprite.position.set(startX, startY, startZ);
-                sprite.scale.set(60, 4, 1);
-                sprite.rotation.z = -Math.PI / 4;
-
-                scene.add(sprite);
-
-                shootingStars.push({
-                    mesh: sprite,
-                    speedX: 3.5 + Math.random() * 2,
-                    speedY: -(3.5 + Math.random() * 2),
-                    life: 0,
-                    maxLife: 90 + Math.random() * 60
-                });
-            }
-
-            camera.position.z = 350;
+            camera.position.z = 300;
             let clock = new THREE.Clock();
 
-            // ANIMACIÓN PRINCIPAL
+            // ANIMACIÓN CONTINUA DE CAÍDA PAUSADA Y TITILEO
             function animate() {
                 requestAnimationFrame(animate);
-                const elapsedTime = clock.getElapsedTime();
+                const time = clock.getElapsedTime();
 
-                const posArr = starField.geometry.attributes.position.array;
-                
-                for (let i = 0; i < starsCount; i++) {
-                    posArr[i * 3 + 1] -= fallSpeeds[i];
+                // Movimiento suave de caída en Y
+                const positions = nearStarsMesh.geometry.attributes.position.array;
+                for (let i = 0; i < countNear; i++) {
+                    positions[i * 3 + 1] -= fallSpeeds[i];
 
-                    if (posArr[i * 3 + 1] < -450) {
-                        posArr[i * 3 + 1] = 450;
-                        posArr[i * 3] = (Math.random() - 0.5) * 900;
+                    if (positions[i * 3 + 1] < -450) {
+                        positions[i * 3 + 1] = 450;
+                        positions[i * 3] = (Math.random() - 0.5) * 900;
                     }
                 }
-                starField.geometry.attributes.position.needsUpdate = true;
+                nearStarsMesh.geometry.attributes.position.needsUpdate = true;
 
-                starMaterial.opacity = 0.75 + Math.sin(elapsedTime * 1.5) * 0.15;
-
-                if (shootingStars.length < maxShootingStars && Math.random() < 0.008) {
-                    spawnShootingStar();
-                }
-
-                for (let s = shootingStars.length - 1; s >= 0; s--) {
-                    const st = shootingStars[s];
-                    st.life++;
-                    st.mesh.position.x += st.speedX;
-                    st.mesh.position.y += st.speedY;
-
-                    if (st.life < 20) {
-                        st.mesh.material.opacity = st.life / 20;
-                    } else if (st.life > st.maxLife - 20) {
-                        st.mesh.material.opacity = (st.maxLife - st.life) / 20;
-                    }
-
-                    if (st.life >= st.maxLife || st.mesh.position.y < -450) {
-                        scene.remove(st.mesh);
-                        st.mesh.material.dispose();
-                        shootingStars.splice(s, 1);
-                    }
-                }
+                // Titileo tenue en la capa principal
+                matNear.opacity = 0.75 + Math.sin(time * 1.8) * 0.15;
+                matFar.opacity = 0.55 + Math.cos(time * 1.2) * 0.10;
 
                 renderer.render(scene, camera);
             }
