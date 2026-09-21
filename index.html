@@ -173,9 +173,9 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN: CALCULADORA DE CRAFTING Y METAS -->
+            <!-- SECCIÓN: CALCULADORA DE CRAFTING Y METAS (ESTRUCTURA DE 2 COLUMNAS) -->
             <section id="section-craft" class="app-section">
-                <div class="section-header">
+                <div class="section-header mb-3">
                     <div>
                         <h2><i class="fa-solid fa-hammer text-cyan"></i> Calculadora de Crafting y Metas</h2>
                         <p>Selecciona una receta, calcula tus materiales e ingresa tu diario de farmeo.</p>
@@ -199,24 +199,33 @@
                     </div>
                 </div>
 
-                <div class="craft-selector-card card mb-4 text-center">
-                    <div class="form-group max-w-500 center-block">
-                        <label for="craftRecipeSelect">Selecciona Receta de Interlude</label>
-                        <select id="craftRecipeSelect" class="form-control">
-                            <!-- Generado por JS -->
-                        </select>
+                <!-- DISPOSICIÓN EN 2 COLUMNAS: IZQUIERDA RECETAS / DERECHA PROYECTOS -->
+                <div class="craft-main-layout">
+                    <!-- COLUMNA IZQUIERDA: SELECCIONAR RECETA Y DETALLES -->
+                    <div class="craft-left-col">
+                        <div class="craft-selector-card card">
+                            <h3 class="mb-3 text-cyan"><i class="fa-solid fa-scroll me-2"></i> Seleccionar Receta</h3>
+                            <div class="form-group mb-3">
+                                <label for="craftRecipeSelect">Recetas disponibles de Interlude</label>
+                                <select id="craftRecipeSelect" class="form-control">
+                                    <!-- Generado por JS -->
+                                </select>
+                            </div>
+                            <div id="recipePreviewContainer" class="recipe-preview-area">
+                                <p class="text-muted text-center py-3">Selecciona una receta para visualizar los materiales.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div id="recipePreviewContainer" class="recipe-preview-area mt-3">
-                        <p class="text-muted text-center">Selecciona una receta arriba para ver los materiales requeridos.</p>
+
+                    <!-- COLUMNA DERECHA: PROYECTOS DE FARM ACTIVOS -->
+                    <div class="craft-right-col">
+                        <div class="active-projects-header mb-2 d-flex justify-content-between align-items-center">
+                            <h3><i class="fa-solid fa-list-check text-purple me-2"></i> Mis Proyectos Activos</h3>
+                        </div>
+                        <div id="activeCraftProjects" class="craft-projects-grid">
+                            <!-- Generado dinámicamente -->
+                        </div>
                     </div>
-                </div>
-
-                <div class="active-projects-header mb-3">
-                    <h3><i class="fa-solid fa-list-check text-purple"></i> Mis Proyectos de Farm Activos</h3>
-                </div>
-
-                <div id="activeCraftProjects" class="craft-projects-grid">
-                    <!-- Generado dinámicamente -->
                 </div>
             </section>
 
@@ -441,7 +450,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE ESTRELLAS REALISTAS MULTICAPA 3D EN CASCADA SUAVE -->
+    <!-- SCRIPT DE ESTRELLAS MÁS BRILLANTES EN FONDO NEGRO PROFUNDO (3D) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('universeCanvas');
@@ -454,8 +463,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // MAPA DE TEXTURA CON LUZ SOFT-GLOW (PUNTO ESTELAR REALISTA)
-            function generateGlowPointTexture() {
+            // MAPA DE TEXTURA DE ALTA LUMINOSIDAD (ULTRA GLOW)
+            function generateBrightStarTexture() {
                 const c = document.createElement('canvas');
                 c.width = 64;
                 c.height = 64;
@@ -463,9 +472,9 @@
 
                 const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
                 g.addColorStop(0, 'rgba(255, 255, 255, 1)');
-                g.addColorStop(0.15, 'rgba(255, 255, 255, 0.9)');
-                g.addColorStop(0.4, 'rgba(220, 235, 255, 0.4)');
-                g.addColorStop(0.7, 'rgba(160, 180, 255, 0.1)');
+                g.addColorStop(0.2, 'rgba(255, 255, 255, 0.95)');
+                g.addColorStop(0.5, 'rgba(230, 240, 255, 0.6)');
+                g.addColorStop(0.8, 'rgba(180, 200, 255, 0.2)');
                 g.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
                 ctx.fillStyle = g;
@@ -473,19 +482,18 @@
                 return new THREE.CanvasTexture(c);
             }
 
-            const starTexture = generateGlowPointTexture();
+            const starTexture = generateBrightStarTexture();
 
-            // PALETA DE PALETA DE TEMPERATURAS ESTELARES (ASTRONÓMICAS)
             const starPalette = [
-                new THREE.Color('#ffffff'), // Blanca
-                new THREE.Color('#b9d5ff'), // Azul gigante
-                new THREE.Color('#ffdca8'), // Enana amarilla / dorada
-                new THREE.Color('#f7c8ff'), // Destello cian / magenta tenue
-                new THREE.Color('#9eeaff')  // Azul cosmos
+                new THREE.Color('#ffffff'), // Blanco radiante
+                new THREE.Color('#d0e3ff'), // Azul gigante brillante
+                new THREE.Color('#ffe8c2'), // Dorado cálido
+                new THREE.Color('#fbcaff'), // Magent / Violeta brillante
+                new THREE.Color('#a8f3ff')  // Cian espacial
             ];
 
-            // 1. CAPA DE ESTRELLAS DISTANTES (PROFUNDIDAD SUTIL)
-            const countFar = 600;
+            // CAPA 1: ESTRELLAS PROFUNDAS MAS LUMINOSAS
+            const countFar = 650;
             const geomFar = new THREE.BufferGeometry();
             const posFar = new Float32Array(countFar * 3);
             const colFar = new Float32Array(countFar * 3);
@@ -493,7 +501,7 @@
             for (let i = 0; i < countFar; i++) {
                 posFar[i * 3] = (Math.random() - 0.5) * 1000;
                 posFar[i * 3 + 1] = (Math.random() - 0.5) * 1000;
-                posFar[i * 3 + 2] = -200 - Math.random() * 400;
+                posFar[i * 3 + 2] = -150 - Math.random() * 350;
 
                 const col = starPalette[Math.floor(Math.random() * starPalette.length)];
                 colFar[i * 3] = col.r;
@@ -505,43 +513,7 @@
             geomFar.setAttribute('color', new THREE.BufferAttribute(colFar, 3));
 
             const matFar = new THREE.PointsMaterial({
-                size: 2.0,
-                map: starTexture,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.65,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-            });
-
-            const farStarsMesh = new THREE.Points(geomFar, matFar);
-            scene.add(farStarsMesh);
-
-            // 2. CAPA DE ESTRELLAS PRINCIPALES EN CASCADA SUAVE
-            const countNear = 350;
-            const geomNear = new THREE.BufferGeometry();
-            const posNear = new Float32Array(countNear * 3);
-            const colNear = new Float32Array(countNear * 3);
-            const fallSpeeds = new Float32Array(countNear);
-
-            for (let i = 0; i < countNear; i++) {
-                posNear[i * 3] = (Math.random() - 0.5) * 900;
-                posNear[i * 3 + 1] = (Math.random() - 0.5) * 900;
-                posNear[i * 3 + 2] = -50 - Math.random() * 200;
-
-                const col = starPalette[Math.floor(Math.random() * starPalette.length)];
-                colNear[i * 3] = col.r;
-                colNear[i * 3 + 1] = col.g;
-                colNear[i * 3 + 2] = col.b;
-
-                fallSpeeds[i] = 0.05 + Math.random() * 0.12; // Lenta caída natural
-            }
-
-            geomNear.setAttribute('position', new THREE.BufferAttribute(posNear, 3));
-            geomNear.setAttribute('color', new THREE.BufferAttribute(colNear, 3));
-
-            const matNear = new THREE.PointsMaterial({
-                size: 3.8,
+                size: 2.8,
                 map: starTexture,
                 vertexColors: true,
                 transparent: true,
@@ -550,18 +522,52 @@
                 depthWrite: false
             });
 
+            const farStarsMesh = new THREE.Points(geomFar, matFar);
+            scene.add(farStarsMesh);
+
+            // CAPA 2: ESTRELLAS CERCANAS CON CAÍDA SUAVE Y MÁXIMO BRILLO
+            const countNear = 400;
+            const geomNear = new THREE.BufferGeometry();
+            const posNear = new Float32Array(countNear * 3);
+            const colNear = new Float32Array(countNear * 3);
+            const fallSpeeds = new Float32Array(countNear);
+
+            for (let i = 0; i < countNear; i++) {
+                posNear[i * 3] = (Math.random() - 0.5) * 900;
+                posNear[i * 3 + 1] = (Math.random() - 0.5) * 900;
+                posNear[i * 3 + 2] = -30 - Math.random() * 180;
+
+                const col = starPalette[Math.floor(Math.random() * starPalette.length)];
+                colNear[i * 3] = col.r;
+                colNear[i * 3 + 1] = col.g;
+                colNear[i * 3 + 2] = col.b;
+
+                fallSpeeds[i] = 0.05 + Math.random() * 0.12;
+            }
+
+            geomNear.setAttribute('position', new THREE.BufferAttribute(posNear, 3));
+            geomNear.setAttribute('color', new THREE.BufferAttribute(colNear, 3));
+
+            const matNear = new THREE.PointsMaterial({
+                size: 4.8,
+                map: starTexture,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.98,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
             const nearStarsMesh = new THREE.Points(geomNear, matNear);
             scene.add(nearStarsMesh);
 
-            camera.position.z = 300;
+            camera.position.z = 280;
             let clock = new THREE.Clock();
 
-            // ANIMACIÓN CONTINUA DE CAÍDA PAUSADA Y TITILEO
             function animate() {
                 requestAnimationFrame(animate);
                 const time = clock.getElapsedTime();
 
-                // Movimiento suave de caída en Y
                 const positions = nearStarsMesh.geometry.attributes.position.array;
                 for (let i = 0; i < countNear; i++) {
                     positions[i * 3 + 1] -= fallSpeeds[i];
@@ -573,9 +579,9 @@
                 }
                 nearStarsMesh.geometry.attributes.position.needsUpdate = true;
 
-                // Titileo tenue en la capa principal
-                matNear.opacity = 0.75 + Math.sin(time * 1.8) * 0.15;
-                matFar.opacity = 0.55 + Math.cos(time * 1.2) * 0.10;
+                // Destello suave pero altamente luminoso
+                matNear.opacity = 0.85 + Math.sin(time * 2.2) * 0.15;
+                matFar.opacity = 0.70 + Math.cos(time * 1.5) * 0.15;
 
                 renderer.render(scene, camera);
             }

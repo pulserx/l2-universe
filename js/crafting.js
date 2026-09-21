@@ -1,301 +1,288 @@
-import { db, auth } from './firebase-config.js';
+import { db } from './firebase-config.js';
 import { 
-    collection, addDoc, deleteDoc, doc, onSnapshot, query, updateDoc, serverTimestamp 
+    collection, 
+    addDoc, 
+    onSnapshot, 
+    doc, 
+    deleteDoc, 
+    updateDoc, 
+    query, 
+    orderBy, 
+    serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// RECETAS USANDO ÍCONOS NATIVOS DE FONTAWESOME EN LUGAR DE IMÁGENES EXTERNAS
-export const CRAFT_RECIPES = {
-    'draconic_armor': {
-        name: 'Draconic Leather Armor', grade: 'S', iconClass: 'fa-shield-halved',
-        materials: [
-            { id: 'recipe', name: 'Recipe: Draconic Leather Armor (60%)', required: 1, iconClass: 'fa-scroll' },
-            { id: 'key_part', name: 'Draconic Leather Armor Texture', required: 15, iconClass: 'fa-puzzle-piece' },
-            { id: 'mold_hardener', name: 'Mold Hardener', required: 17, iconClass: 'fa-vial' },
-            { id: 'enria', name: 'Enria', required: 34, iconClass: 'fa-gem' },
-            { id: 'asofe', name: 'Asofe', required: 34, iconClass: 'fa-cube' }
+let currentUser = null;
+let craftProjects = [];
+let unsubscribeCraftListener = null;
+
+// BASE DE DATOS DE RECETAS INTERLUDE S-GRADE Y A-GRADE
+const interludeRecipes = [
+    {
+        id: 'rec_draconic_bow',
+        name: 'Draconic Bow (Grade S)',
+        mats: [
+            { name: 'Recipe: Draconic Bow (60%)', qty: 1 },
+            { name: 'Draconic Bow Shaft', qty: 17 },
+            { name: 'Dragon Bone', qty: 100 },
+            { name: 'Enchanted Dragon Skin', qty: 100 },
+            { name: 'Mold Hardener', qty: 20 },
+            { name: 'Enchanted Bone', qty: 150 },
+            { name: 'Crystal: S-Grade', qty: 340 },
+            { name: 'Gemstone S', qty: 40 }
         ]
     },
-    'angel_slayer': {
-        name: 'Angel Slayer', grade: 'S', iconClass: 'fa-wand-magic-sparkles',
-        materials: [
-            { id: 'recipe', name: 'Recipe: Angel Slayer (60%)', required: 1, iconClass: 'fa-scroll' },
-            { id: 'key_part', name: 'Angel Slayer Blade', required: 17, iconClass: 'fa-ring' },
-            { id: 'gem_s', name: 'Gemstone S', required: 70, iconClass: 'fa-gem' },
-            { id: 'crystal_s', name: 'Crystal: S-Grade', required: 235, iconClass: 'fa-diamond' }
+    {
+        id: 'rec_angel_slayer',
+        name: 'Angel Slayer (Grade S)',
+        mats: [
+            { name: 'Recipe: Angel Slayer (60%)', qty: 1 },
+            { name: 'Angel Slayer Blade', qty: 17 },
+            { name: 'Dragon Bone', qty: 100 },
+            { name: 'Enchanted Dragon Skin', qty: 100 },
+            { name: 'Mold Hardener', qty: 20 },
+            { name: 'Enchanted Bone', qty: 150 },
+            { name: 'Crystal: S-Grade', qty: 340 },
+            { name: 'Gemstone S', qty: 40 }
+        ]
+    },
+    {
+        id: 'rec_draconic_leather_armor',
+        name: 'Draconic Leather Armor (Grade S)',
+        mats: [
+            { name: 'Recipe: Draconic Leather Armor (60%)', qty: 1 },
+            { name: 'Draconic Leather Armor Part', qty: 14 },
+            { name: 'Enchanted Dragon Skin', qty: 70 },
+            { name: 'Mold Glue', qty: 35 },
+            { name: 'Asofe', qty: 35 },
+            { name: 'Crystal: S-Grade', qty: 280 },
+            { name: 'Gemstone S', qty: 25 }
+        ]
+    },
+    {
+        id: 'rec_imperial_crusader_breastplate',
+        name: 'Imperial Crusader Breastplate (Grade S)',
+        mats: [
+            { name: 'Recipe: Imperial Crusader Breastplate (60%)', qty: 1 },
+            { name: 'Imperial Crusader Breastplate Part', qty: 14 },
+            { name: 'Imperial Diamond', qty: 70 },
+            { name: 'Mold Lubricant', qty: 35 },
+            { name: 'Enkanterion', qty: 35 },
+            { name: 'Crystal: S-Grade', qty: 310 },
+            { name: 'Gemstone S', qty: 30 }
+        ]
+    },
+    {
+        id: 'rec_major_arcana_robe',
+        name: 'Major Arcana Robe (Grade S)',
+        mats: [
+            { name: 'Recipe: Major Arcana Robe (60%)', qty: 1 },
+            { name: 'Major Arcana Robe Fabric', qty: 14 },
+            { name: 'Cloth of Silver', qty: 70 },
+            { name: 'Mold Hardener', qty: 35 },
+            { name: 'Crystal: S-Grade', qty: 280 },
+            { name: 'Gemstone S', qty: 25 }
         ]
     }
-};
-
-let craftingUnsubscribe = null;
-let activeProjects = [];
-let craftStats = { success: 0, fail: 0 };
+];
 
 export function initCraftingManager(user) {
-    if (craftingUnsubscribe) {
-        craftingUnsubscribe();
-        craftingUnsubscribe = null;
+    currentUser = user;
+    if (unsubscribeCraftListener) {
+        unsubscribeCraftListener();
+        unsubscribeCraftListener = null;
     }
-    renderRecipeSelector();
+
+    setupRecipeSelectOptions();
 
     if (!user) {
-        activeProjects = [];
-        craftStats = { success: 0, fail: 0 };
-        renderActiveProjects();
-        renderCraftStats();
-        updateCraftDashboardCount();
+        craftProjects = [];
+        renderCraftProjects();
         return;
     }
 
-    try {
-        const projectsRef = collection(db, 'users', user.uid, 'crafting_projects');
-        craftingUnsubscribe = onSnapshot(query(projectsRef), (snapshot) => {
-            activeProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderActiveProjects();
-            calculateAndRenderStats();
-            updateCraftDashboardCount();
-        }, (error) => {
-            console.error("Error al cargar proyectos de craft:", error);
-        });
-    } catch (e) {
-        console.error("Error inicializando Firestore Craft:", e);
-    }
-}
+    const craftRef = collection(db, 'users', user.uid, 'craft_projects');
+    const q = query(craftRef, orderBy('createdAt', 'desc'));
 
-function updateCraftDashboardCount() {
-    const el = document.getElementById('dashCraftCount');
-    if (el) el.textContent = activeProjects.length;
-}
+    unsubscribeCraftListener = onSnapshot(q, (snapshot) => {
+        craftProjects = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
 
-function calculateAndRenderStats() {
-    let success = 0;
-    let fail = 0;
-    activeProjects.forEach(p => {
-        if (p.result === 'success') success++;
-        if (p.result === 'fail') fail++;
+        renderCraftProjects();
+        updateDashboardCraftCount();
+    }, (error) => {
+        console.error("Error al escuchar proyectos de crafteo:", error);
     });
-    craftStats = { success, fail };
-    renderCraftStats();
 }
 
-function renderCraftStats() {
-    const elSuccess = document.getElementById('craftSuccessCount');
-    const elFail = document.getElementById('craftFailCount');
-    const elRatio = document.getElementById('craftRatioBadge');
-
-    if (elSuccess) elSuccess.textContent = craftStats.success;
-    if (elFail) elFail.textContent = craftStats.fail;
-
-    const total = craftStats.success + craftStats.fail;
-    const ratio = total > 0 ? Math.round((craftStats.success / total) * 100) : 0;
-    if (elRatio) elRatio.textContent = `Tasa de Éxito: ${ratio}%`;
-}
-
-export function renderRecipeSelector() {
+function setupRecipeSelectOptions() {
     const select = document.getElementById('craftRecipeSelect');
     if (!select) return;
 
-    select.innerHTML = '<option value="">-- Selecciona una Receta --</option>';
-    Object.keys(CRAFT_RECIPES).forEach(key => {
-        const item = CRAFT_RECIPES[key];
-        select.innerHTML += `<option value="${key}">[Grado ${item.grade}] ${item.name}</option>`;
+    let html = `<option value="">-- Selecciona una receta --</option>`;
+    interludeRecipes.forEach(r => {
+        html += `<option value="${r.id}">${r.name}</option>`;
     });
 
-    select.onchange = (e) => previewRecipe(e.target.value);
+    select.innerHTML = html;
+
+    select.onchange = (e) => {
+        const recipeId = e.target.value;
+        const recipe = interludeRecipes.find(r => r.id === recipeId);
+        renderRecipePreview(recipe);
+    };
 }
 
-function previewRecipe(recipeKey) {
-    const previewContainer = document.getElementById('recipePreviewContainer');
-    if (!previewContainer) return;
-    const recipe = CRAFT_RECIPES[recipeKey];
+// ALINEACIÓN DIRECTA HORIZONTAL DE MATERIALES CON FLEXBOX
+function renderRecipePreview(recipe) {
+    const container = document.getElementById('recipePreviewContainer');
+    if (!container) return;
 
     if (!recipe) {
-        previewContainer.innerHTML = '<p class="text-muted text-center">Selecciona una receta arriba.</p>';
+        container.innerHTML = `<p class="text-muted text-center py-3">Selecciona una receta arriba para ver los materiales requeridos.</p>`;
         return;
     }
 
-    previewContainer.innerHTML = `
-        <div class="card text-center">
-            <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                <i class="fa-solid ${recipe.iconClass} text-cyan fs-2"></i>
-                <h3>${recipe.name}</h3>
-            </div>
-            <div class="materials-preview-grid mb-3">
-                ${recipe.materials.map(mat => `
-                    <div class="mat-preview-item">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="fa-solid ${mat.iconClass} text-purple"></i>
-                            <span>${mat.name}</span>
-                        </div>
-                        <strong>x${mat.required}</strong>
+    container.innerHTML = `
+        <div class="card mt-3">
+            <h4 class="text-cyan mb-2"><i class="fa-solid fa-screwdriver-wrench me-1"></i> ${recipe.name}</h4>
+            <div class="recipe-mats-list mb-3">
+                ${recipe.mats.map(m => `
+                    <div class="recipe-mat-item">
+                        <span class="mat-name"><i class="fa-solid fa-cube text-purple"></i> ${m.name}</span>
+                        <span class="mat-qty">x${m.qty}</span>
                     </div>
                 `).join('')}
             </div>
-            <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-primary btn-lg" onclick="window.startFarmProject('${recipeKey}')"><i class="fa-solid fa-play"></i> Empezar Farm</button>
-            </div>
+            <button class="btn btn-primary w-100" onclick="window.startCraftProject('${recipe.id}')">
+                <i class="fa-solid fa-rocket me-1"></i> Iniciar Proyecto de Farm
+            </button>
         </div>
     `;
 }
 
-window.startFarmProject = async (recipeKey) => {
-    const user = auth.currentUser;
-    if (!user) return alert("Inicia sesión primero.");
-    const recipe = CRAFT_RECIPES[recipeKey];
-    const initialProgress = {};
-    recipe.materials.forEach(mat => initialProgress[mat.id] = 0);
+window.startCraftProject = async (recipeId) => {
+    if (!currentUser) return;
+    const recipe = interludeRecipes.find(r => r.id === recipeId);
+    if (!recipe) return;
 
     try {
-        await addDoc(collection(db, 'users', user.uid, 'crafting_projects'), {
-            recipeKey, itemName: recipe.name, grade: recipe.grade, progress: initialProgress, status: 'active', createdAt: serverTimestamp()
+        const craftRef = collection(db, 'users', currentUser.uid, 'craft_projects');
+        const userProgress = {};
+        recipe.mats.forEach(m => {
+            userProgress[m.name] = 0; // Inicializar cantidad conseguida en 0
         });
-    } catch (e) {
-        console.error("Error creando proyecto de craft:", e);
+
+        await addDoc(craftRef, {
+            recipeId: recipe.id,
+            recipeName: recipe.name,
+            mats: recipe.mats,
+            userProgress,
+            status: 'IN_PROGRESS',
+            createdAt: serverTimestamp()
+        });
+
+        window.addNotification(`🚀 Proyecto iniciado: ${recipe.name}`);
+    } catch (err) {
+        console.error("Error al crear proyecto:", err);
     }
 };
 
-export function renderActiveProjects() {
-    const container = document.getElementById('activeCraftProjects');
-    if (!container) return;
+window.updateMaterialProgress = async (projectId, matName, value) => {
+    if (!currentUser) return;
+    const project = craftProjects.find(p => p.id === projectId);
+    if (!project) return;
 
-    if (activeProjects.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted py-4"><p>No tienes metas de farm activas.</p></div>';
+    const newProgress = { ...project.userProgress, [matName]: Math.max(0, Number(value) || 0) };
+    const docRef = doc(db, 'users', currentUser.uid, 'craft_projects', projectId);
+
+    await updateDoc(docRef, {
+        userProgress: newProgress
+    });
+};
+
+window.deleteCraftProject = async (projectId) => {
+    if (!currentUser) return;
+    if (confirm("¿Seguro que deseas cancelar o eliminar este proyecto?")) {
+        const docRef = doc(db, 'users', currentUser.uid, 'craft_projects', projectId);
+        await deleteDoc(docRef);
+    }
+};
+
+export function renderCraftProjects() {
+    const grid = document.getElementById('activeCraftProjects');
+    if (!grid) return;
+
+    if (craftProjects.length === 0) {
+        grid.innerHTML = `
+            <div class="card text-center py-4 w-100">
+                <p class="text-muted"><i class="fa-solid fa-hammer mb-2 fs-lg"></i><br>No tienes proyectos de crafteo activos.<br>Selecciona una receta a la izquierda para comenzar.</p>
+            </div>
+        `;
         return;
     }
 
-    container.innerHTML = activeProjects.map(project => {
-        const recipe = CRAFT_RECIPES[project.recipeKey];
-        if (!recipe) return '';
+    grid.innerHTML = craftProjects.map(p => {
+        let totalRequired = 0;
+        let totalCurrent = 0;
 
-        let totalReq = 0, totalCur = 0;
-        recipe.materials.forEach(mat => {
-            totalReq += mat.required;
-            totalCur += Math.min(project.progress[mat.id] || 0, mat.required);
+        p.mats.forEach(m => {
+            totalRequired += m.qty;
+            totalCurrent += Math.min(m.qty, p.userProgress[m.name] || 0);
         });
-        const percent = Math.min(100, Math.round((totalCur / totalReq) * 100));
-        const isComplete = percent === 100;
+
+        const pct = totalRequired > 0 ? Math.floor((totalCurrent / totalRequired) * 100) : 0;
+        const isCompleted = pct >= 100;
+
+        // FIESTA CELEBRACIÓN AL ALCANZAR EL 100%
+        if (isCompleted && p.status !== 'COMPLETED') {
+            const overlay = document.getElementById('celebrationOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
 
         return `
-            <div class="card mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid ${recipe.iconClass} text-cyan"></i>
-                        <h3>${recipe.itemName}</h3>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-cyan font-mono fw-bold">${percent}%</span>
-                        <button class="btn-icon danger" onclick="window.deleteCraftProject('${project.id}')"><i class="fa-solid fa-trash"></i></button>
-                    </div>
+            <div class="card mb-3 border-cyan">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="text-cyan"><i class="fa-solid fa-cubes me-1"></i> ${p.recipeName}</h4>
+                    <button class="btn-icon danger" onclick="window.deleteCraftProject('${p.id}')" title="Eliminar Proyecto">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
 
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill ${isComplete ? 'complete' : ''}" style="width: ${percent}%"></div>
+                <div class="progress-bar-bg mb-3" style="background: rgba(255,255,255,0.05); border-radius: 6px; height: 12px; overflow: hidden; border: 1px solid rgba(255,0,55,0.2);">
+                    <div class="progress-bar-fill" style="width: ${pct}%; background: linear-gradient(90deg, #ff0037, #f59e0b); height: 100%;"></div>
+                </div>
+                <div class="d-flex justify-content-between fs-sm mb-3">
+                    <span class="text-muted">Progreso Global:</span>
+                    <strong class="${isCompleted ? 'text-green' : 'text-gold'}">${pct}% Completado</strong>
                 </div>
 
-                ${isComplete && !project.result ? `
-                    <div class="craft-result-options text-center my-2 p-2 card border-cyan">
-                        <p class="mb-2 fw-bold text-gold">¡Meta 100% Alcanzada! Registra el resultado del crafteo:</p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-success" onclick="window.setCraftResult('${project.id}', 'success')"><i class="fa-solid fa-check"></i> Success</button>
-                            <button class="btn btn-danger-craft" onclick="window.setCraftResult('${project.id}', 'fail')"><i class="fa-solid fa-xmark"></i> Fail</button>
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${project.result ? `
-                    <div class="text-center my-1">
-                        <span class="badge ${project.result === 'success' ? 'badge-green' : 'badge-purple'}">
-                            Resultado: ${project.result.toUpperCase()}
-                        </span>
-                    </div>
-                ` : ''}
-
-                <div class="materials-tracker-list mt-2">
-                    ${recipe.materials.map(mat => {
-                        const cur = project.progress[mat.id] || 0;
+                <div class="mats-progress-list">
+                    ${p.mats.map(m => {
+                        const cur = p.userProgress[m.name] || 0;
+                        const done = cur >= m.qty;
                         return `
-                            <div class="mat-tracker-row">
+                            <div class="recipe-mat-item">
+                                <span class="mat-name ${done ? 'text-green' : ''}">
+                                    <i class="fa-solid ${done ? 'fa-circle-check text-green' : 'fa-circle-notch text-cyan'}"></i> ${m.name}
+                                </span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <i class="fa-solid ${mat.iconClass} text-cyan"></i>
-                                    <span class="fs-sm">${mat.name} (${cur}/${mat.required})</span>
-                                </div>
-                                <div class="mat-add-wrap">
-                                    <input type="number" id="input-${project.id}-${mat.id}" class="form-control mat-input-sm" placeholder="0" min="0">
-                                    <button class="btn btn-outline btn-sm" onclick="window.addMaterialAmount('${project.id}', '${mat.id}', ${cur},${mat.required})">+ Agregar</button>
+                                    <input type="number" class="form-control text-center p-1" style="width: 75px; height: 30px; font-size: 0.85rem;" 
+                                        value="${cur}" min="0" max="${m.qty}"
+                                        onchange="window.updateMaterialProgress('${p.id}', '${m.name}', this.value)">
+                                    <span class="mat-qty">/ ${m.qty}</span>
                                 </div>
                             </div>
                         `;
                     }).join('')}
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button class="btn btn-outline btn-sm" onclick="window.navigateTo('dashboard')"><i class="fa-solid fa-arrow-left"></i> Volver atrás</button>
-                    <button class="btn btn-primary btn-sm" onclick="alert('Avance guardado correctamente.')"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-window.addMaterialAmount = async (projectId, matId, currentVal, requiredVal) => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const inputEl = document.getElementById(`input-${projectId}-${matId}`);
-    if (!inputEl) return;
-
-    const addVal = parseInt(inputEl.value, 10) || 0;
-    if (addVal <= 0) return;
-
-    const newVal = currentVal + addVal;
-
-    try {
-        const projectRef = doc(db, 'users', user.uid, 'crafting_projects', projectId);
-        await updateDoc(projectRef, {
-            [`progress.${matId}`]: newVal
-        });
-        inputEl.value = '';
-        checkProjectCompletion(projectId);
-    } catch (e) {
-        console.error("Error al actualizar material:", e);
-    }
-};
-
-function checkProjectCompletion(projectId) {
-    const target = activeProjects.find(p => p.id === projectId);
-    if (!target) return;
-    const recipe = CRAFT_RECIPES[target.recipeKey];
-    if (!recipe) return;
-
-    let totalReq = 0, totalCur = 0;
-    recipe.materials.forEach(mat => {
-        totalReq += mat.required;
-        totalCur += Math.min(target.progress[mat.id] || 0, mat.required);
-    });
-
-    if (totalCur >= totalReq) {
-        const overlay = document.getElementById('celebrationOverlay');
-        if (overlay) overlay.style.display = 'flex';
-    }
+function updateDashboardCraftCount() {
+    const countEl = document.getElementById('dashCraftCount');
+    if (countEl) countEl.textContent = craftProjects.length;
 }
-
-window.setCraftResult = async (projectId, resultType) => {
-    const user = auth.currentUser;
-    if (!user) return;
-    try {
-        await updateDoc(doc(db, 'users', user.uid, 'crafting_projects', projectId), {
-            result: resultType
-        });
-    } catch (e) {
-        console.error("Error registrando resultado de craft:", e);
-    }
-};
-
-window.deleteCraftProject = async (projectId) => {
-    const user = auth.currentUser;
-    if (user && confirm("¿Eliminar proyecto?")) {
-        try {
-            await deleteDoc(doc(db, 'users', user.uid, 'crafting_projects', projectId));
-        } catch (e) {
-            console.error("Error borrando proyecto:", e);
-        }
-    }
-};
