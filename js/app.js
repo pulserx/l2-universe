@@ -16,12 +16,12 @@ import { initRaidsManager } from './raids.js';
 let notifications = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 L2 Universe - Suite Privada iniciada correctamente.");
+    console.log("🚀 L2 Universe - Sistema operativo y sincronizado.");
     setupGlobalNavigation();
     setupAuthListeners();
 });
 
-// Configuración de Navegación SPA y Utilidades Globales
+// Navegación SPA y Utilidades Globales
 function setupGlobalNavigation() {
     window.navigateTo = (targetSectionId, event) => {
         if (event) event.preventDefault();
@@ -31,9 +31,7 @@ function setupGlobalNavigation() {
         });
 
         const target = document.getElementById(`section-${targetSectionId}`);
-        if (target) {
-            target.classList.add('active');
-        }
+        if (target) target.classList.add('active');
 
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
@@ -68,10 +66,18 @@ function setupGlobalNavigation() {
         if (modal) modal.style.display = 'none';
     };
 
+    // Al hacer clic en la campanita, se abre el menú y EL GLOBO DESAPARECE AUTOMÁTICAMENTE
     window.toggleNotificationDropdown = () => {
         const dropdown = document.getElementById('notifDropdown');
         if (dropdown) {
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            
+            if (!isOpen) {
+                // Al abrir el menú, limpiamos el badge rojo automáticamente
+                const badgeEl = document.getElementById('notifBadge');
+                if (badgeEl) badgeEl.style.display = 'none';
+            }
         }
     };
 
@@ -97,6 +103,7 @@ function renderNotifications() {
         return;
     }
 
+    // Mostrar notificación con globo rojo
     badgeEl.style.display = 'inline-block';
     badgeEl.textContent = notifications.length;
 
@@ -108,7 +115,7 @@ function renderNotifications() {
     `).join('');
 }
 
-// Autenticación, Firebase y Control de Sesión
+// Autenticación y Control de Sesión
 function setupAuthListeners() {
     const formAuth = document.getElementById('formAuth');
     if (formAuth) {
@@ -137,7 +144,7 @@ function setupAuthListeners() {
     window.handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' }); // Fuerza a preguntar con qué cuenta entrar
+            provider.setCustomParameters({ prompt: 'select_account' });
             await signInWithPopup(auth, provider);
             window.addNotification("🚀 Conectado exitosamente con Google.");
         } catch (error) {
@@ -179,7 +186,6 @@ function setupAuthListeners() {
             if (loginContainer) loginContainer.style.display = 'none';
             if (appContainer) appContainer.style.display = 'block';
 
-            // Actualizar datos de usuario en UI
             const userNameEl = document.getElementById('userName');
             const dashUserNameEl = document.getElementById('dashUserName');
             const userAvatarEl = document.getElementById('userAvatar');
@@ -188,13 +194,12 @@ function setupAuthListeners() {
             if (dashUserNameEl) dashUserNameEl.textContent = user.displayName || user.email.split('@')[0];
             if (userAvatarEl && user.photoURL) userAvatarEl.src = user.photoURL;
 
-            // Inicializar todos los módulos con el UID del usuario conectado
             initAccountsManager(user);
             initCraftingManager(user);
             initTrackerManager(user);
             initRaidsManager(user);
         } else {
-            console.log("Ningún usuario autenticado. Mostrando pantalla de login.");
+            console.log("Ningún usuario autenticado.");
             if (loginContainer) loginContainer.style.display = 'flex';
             if (appContainer) appContainer.style.display = 'none';
 

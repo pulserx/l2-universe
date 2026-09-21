@@ -26,7 +26,9 @@ export function initAccountsManager(user) {
     setupAccountFormHandlers();
 
     if (!user) {
-        accountsList = [];
+        // Cargar desde LocalStorage como respaldo si no hay usuario activo
+        const localData = localStorage.getItem('l2_universe_accounts');
+        accountsList = localData ? JSON.parse(localData) : [];
         renderAccounts();
         updateDashboardAccountsCount();
         return;
@@ -41,20 +43,31 @@ export function initAccountsManager(user) {
             ...doc.data()
         }));
 
+        // Sincronizar respaldo local
+        localStorage.setItem('l2_universe_accounts', JSON.stringify(accountsList));
+
         updateServerFilterOptions();
         renderAccounts();
         updateDashboardAccountsCount();
     }, (error) => {
-        console.error("Error al escuchar cuentas:", error);
+        console.warn("Aviso Firebase (Cuentas): Usando respaldo local.", error);
+        const localData = localStorage.getItem('l2_universe_accounts');
+        accountsList = localData ? JSON.parse(localData) : [];
+        updateServerFilterOptions();
+        renderAccounts();
+        updateDashboardAccountsCount();
     });
 }
 
 function setupAccountFormHandlers() {
     const formAcc = document.getElementById('formAddAccount');
     if (formAcc) {
-        formAcc.onsubmit = async (e) => {
+        // Reemplazar nodo para evitar duplicados de listeners
+        const newFormAcc = formAcc.cloneNode(true);
+        formAcc.parentNode.replaceChild(newFormAcc, formAcc);
+
+        newFormAcc.onsubmit = async (e) => {
             e.preventDefault();
-            if (!currentUser) return;
 
             const server = document.getElementById('accServer').value.trim();
             const chronicle = document.getElementById('accChronicle').value.trim();
@@ -66,32 +79,53 @@ function setupAccountFormHandlers() {
                 return;
             }
 
-            try {
-                const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
-                await addDoc(accountsRef, {
-                    server,
-                    chronicle,
-                    username,
-                    notes,
-                    characters: [],
-                    createdAt: serverTimestamp()
-                });
+            const newAccountObj = {
+                id: 'local_' + Date.now(),
+                server,
+                chronicle,
+                username,
+                notes,
+                characters: [],
+                createdAt: new Date().toISOString()
+            };
 
-                formAcc.reset();
-                window.closeModal('addAccountModal');
-                window.addNotification(`✅ Cuenta "${username}" guardada con éxito.`);
-            } catch (err) {
-                console.error("Error al guardar cuenta:", err);
-                alert("Error al guardar en la base de datos.");
+            // Actualización optimista local inmediata
+            accountsList.unshift(newAccountObj);
+            localStorage.setItem('l2_universe_accounts', JSON.stringify(accountsList));
+            updateServerFilterOptions();
+            renderAccounts();
+            updateDashboardAccountsCount();
+
+            newFormAcc.reset();
+            window.closeModal('addAccountModal');
+            if (window.addNotification) window.addNotification(`✅ Cuenta "${username}" guardada con éxito.`);
+
+            // Guardar en Firestore en segundo plano si hay usuario
+            if (currentUser) {
+                try {
+                    const accountsRef = collection(db, 'users', currentUser.uid, 'accounts');
+                    await addDoc(accountsRef, {
+                        server,
+                        chronicle,
+                        username,
+                        notes,
+                        characters: [],
+                        createdAt: serverTimestamp()
+                    });
+                } catch (err) {
+                    console.error("Error al sincronizar cuenta con Firestore:", err);
+                }
             }
         };
     }
 
     const formChar = document.getElementById('formAddChar');
     if (formChar) {
-        formChar.onsubmit = async (e) => {
+        const newFormChar = formChar.cloneNode(true);
+        formChar.parentNode.replaceChild(newFormChar, formChar);
+
+        newFormChar.onsubmit = async (e) => {
             e.preventDefault();
-            if (!currentUser) return;
 
             const accountId = document.getElementById('charAccountId').value;
             const name = document.getElementById('charName').value.trim();
@@ -104,18 +138,31 @@ function setupAccountFormHandlers() {
                 return;
             }
 
-            try {
-                const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
-                await updateDoc(docRef, {
-                    characters: arrayUnion({ name, class: charClass, level, gear })
-                });
+            const newChar = { name, class: charClass, level, gear };
 
-                formChar.reset();
-                window.closeModal('addCharModal');
-                window.addNotification(`✨ Personaje "${name}" añadido correctamente.`);
-            } catch (err) {
-                console.error("Error al añadir personaje:", err);
-                alert("Error al guardar el personaje.");
+            // Actualizar localmente
+            const targetAcc = accountsList.find(a => a.id === accountId);
+            if (targetAcc) {
+                if (!targetAcc.characters) targetAcc.characters = [];
+                targetAcc.characters.push(newChar);
+                localStorage.setItem('l2_universe_accounts', JSON.stringify(accountsList));
+                renderAccounts();
+            }
+
+            newFormChar.reset();
+            window.closeModal('addCharModal');
+            if (window.addNotification) window.addNotification(`✨ Personaje "${name}" añadido correctamente.`);
+
+            // Sincronizar Firestore
+            if (currentUser && !accountId.startsWith('local_')) {
+                try {
+                    const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
+                    await updateDoc(docRef, {
+                        characters: arrayUnion(newChar)
+                    });
+                } catch (err) {
+                    console.error("Error al añadir personaje en Firestore:", err);
+                }
             }
         };
     }
@@ -129,14 +176,21 @@ window.openAddCharModal = (accountId) => {
 };
 
 window.deleteAccount = async (accountId) => {
-    if (!currentUser) return;
     if (confirm("¿Estás seguro de eliminar esta cuenta y sus personajes?")) {
-        try {
-            const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
-            await deleteDoc(docRef);
-            window.addNotification("🗑️ Cuenta eliminada correctamente.");
-        } catch (err) {
-            console.error("Error al eliminar cuenta:", err);
+        accountsList = accountsList.filter(a => a.id !== accountId);
+        localStorage.setItem('l2_universe_accounts', JSON.stringify(accountsList));
+        updateServerFilterOptions();
+        renderAccounts();
+        updateDashboardAccountsCount();
+        if (window.addNotification) window.addNotification("🗑️ Cuenta eliminada correctamente.");
+
+        if (currentUser && !accountId.startsWith('local_')) {
+            try {
+                const docRef = doc(db, 'users', currentUser.uid, 'accounts', accountId);
+                await deleteDoc(docRef);
+            } catch (err) {
+                console.error("Error al eliminar cuenta en Firestore:", err);
+            }
         }
     }
 };

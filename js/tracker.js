@@ -24,7 +24,8 @@ export function initTrackerManager(user) {
     setupTrackerFormHandler();
 
     if (!user) {
-        farmLogs = [];
+        const localLogs = localStorage.getItem('l2_universe_farm_logs');
+        farmLogs = localLogs ? JSON.parse(localLogs) : [];
         renderFarmLogs();
         updateDashboardLogsCount();
         return;
@@ -39,10 +40,15 @@ export function initTrackerManager(user) {
             ...doc.data()
         }));
 
+        localStorage.setItem('l2_universe_farm_logs', JSON.stringify(farmLogs));
         renderFarmLogs();
         updateDashboardLogsCount();
     }, (error) => {
-        console.error("Error al escuchar registros de farmeo:", error);
+        console.warn("Aviso Firebase (Tracker): Usando respaldo local.", error);
+        const localLogs = localStorage.getItem('l2_universe_farm_logs');
+        farmLogs = localLogs ? JSON.parse(localLogs) : [];
+        renderFarmLogs();
+        updateDashboardLogsCount();
     });
 }
 
@@ -50,19 +56,17 @@ function setupTrackerFormHandler() {
     const form = document.getElementById('formAddFarmLog');
     if (!form) return;
 
-    form.onsubmit = async (e) => {
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.onsubmit = async (e) => {
         e.preventDefault();
-        if (!currentUser) {
-            alert("Debes iniciar sesión para guardar registros.");
-            return;
-        }
 
         const adena = document.getElementById('farmAdena').value.trim();
         const ancientAdena = document.getElementById('farmAncientAdena').value.trim();
         const donateCoins = document.getElementById('farmDonateCoins').value.trim();
         const giantsCodex = document.getElementById('farmGiantsCodex').value.trim();
 
-        // Subsecciones
         const lsType = document.getElementById('lsTypeSelect').value;
         const lsLevel = document.getElementById('lsLevelSelect').value;
         const lsQty = document.getElementById('farmLifeStonesQty').value.trim();
@@ -90,37 +94,60 @@ function setupTrackerFormHandler() {
         if (heartsQty && Number(heartsQty) > 0) itemsMap[heart] = heartsQty;
         if (questQty && Number(questQty) > 0) itemsMap[questItem] = questQty;
 
-        const newLog = {
+        const newLogObj = {
+            id: 'local_log_' + Date.now(),
             adena: adena || '0',
             ancientAdena: ancientAdena || '0',
             donateCoins: donateCoins || '0',
             giantsCodex: giantsCodex || '0',
             items: itemsMap,
             dateStr: new Date().toLocaleDateString(),
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         };
 
-        try {
-            const logsRef = collection(db, 'users', currentUser.uid, 'farm_logs');
-            await addDoc(logsRef, newLog);
-            form.reset();
-            window.addNotification("✅ Jornada de farmeo guardada con éxito.");
-        } catch (err) {
-            console.error("Error al guardar jornada:", err);
-            alert("Error al guardar en Firebase.");
+        // Renderizado optimista local
+        farmLogs.unshift(newLogObj);
+        localStorage.setItem('l2_universe_farm_logs', JSON.stringify(farmLogs));
+        renderFarmLogs();
+        updateDashboardLogsCount();
+
+        newForm.reset();
+        if (window.addNotification) window.addNotification("✅ Jornada de farmeo guardada con éxito.");
+
+        if (currentUser) {
+            try {
+                const logsRef = collection(db, 'users', currentUser.uid, 'farm_logs');
+                await addDoc(logsRef, {
+                    adena: adena || '0',
+                    ancientAdena: ancientAdena || '0',
+                    donateCoins: donateCoins || '0',
+                    giantsCodex: giantsCodex || '0',
+                    items: itemsMap,
+                    dateStr: new Date().toLocaleDateString(),
+                    createdAt: serverTimestamp()
+                });
+            } catch (err) {
+                console.error("Error al sincronizar jornada en Firestore:", err);
+            }
         }
     };
 }
 
 window.deleteFarmLog = async (logId) => {
-    if (!currentUser) return;
     if (confirm("¿Estás seguro de eliminar este registro de farmeo?")) {
-        try {
-            const docRef = doc(db, 'users', currentUser.uid, 'farm_logs', logId);
-            await deleteDoc(docRef);
-            window.addNotification("🗑️ Registro eliminado correctamente.");
-        } catch (err) {
-            console.error("Error al eliminar registro:", err);
+        farmLogs = farmLogs.filter(l => l.id !== logId);
+        localStorage.setItem('l2_universe_farm_logs', JSON.stringify(farmLogs));
+        renderFarmLogs();
+        updateDashboardLogsCount();
+        if (window.addNotification) window.addNotification("🗑️ Registro eliminado correctamente.");
+
+        if (currentUser && !logId.startsWith('local_log_')) {
+            try {
+                const docRef = doc(db, 'users', currentUser.uid, 'farm_logs', logId);
+                await deleteDoc(docRef);
+            } catch (err) {
+                console.error("Error al eliminar registro en Firestore:", err);
+            }
         }
     }
 };
