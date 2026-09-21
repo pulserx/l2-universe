@@ -8,14 +8,18 @@ import {
     updateDoc, 
     query, 
     orderBy, 
-    serverTimestamp 
+    serverTimestamp,
+    getDoc,
+    setDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let currentUser = null;
 let craftProjects = [];
+let craftStats = { success: 0, fail: 0 };
+let activeCompletingProjectId = null;
 let unsubscribeCraftListener = null;
+let unsubscribeStatsListener = null;
 
-// BASE DE DATOS DE RECETAS INTERLUDE S-GRADE Y A-GRADE
 const interludeRecipes = [
     {
         id: 'rec_draconic_bow',
@@ -91,14 +95,31 @@ export function initCraftingManager(user) {
         unsubscribeCraftListener();
         unsubscribeCraftListener = null;
     }
+    if (unsubscribeStatsListener) {
+        unsubscribeStatsListener();
+        unsubscribeStatsListener = null;
+    }
 
     setupRecipeSelectOptions();
 
     if (!user) {
         craftProjects = [];
+        craftStats = { success: 0, fail: 0 };
         renderCraftProjects();
+        updateCraftStatsUI();
         return;
     }
+
+    // Escuchar contador global de Success / Fail de crafteo
+    const statsDocRef = doc(db, 'users', user.uid, 'settings', 'craft_stats');
+    unsubscribeStatsListener = onSnapshot(statsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            craftStats = docSnap.data();
+        } else {
+            craftStats = { success: 0, fail: 0 };
+        }
+        updateCraftStatsUI();
+    });
 
     const craftRef = collection(db, 'users', user.uid, 'craft_projects');
     const q = query(craftRef, orderBy('createdAt', 'desc'));
@@ -134,7 +155,6 @@ function setupRecipeSelectOptions() {
     };
 }
 
-// ALINEACIÓN DIRECTA HORIZONTAL DE MATERIALES CON FLEXBOX
 function renderRecipePreview(recipe) {
     const container = document.getElementById('recipePreviewContainer');
     if (!container) return;
@@ -145,7 +165,7 @@ function renderRecipePreview(recipe) {
     }
 
     container.innerHTML = `
-        <div class="card mt-3">
+        <div class="mt-2">
             <h4 class="text-cyan mb-2"><i class="fa-solid fa-screwdriver-wrench me-1"></i> ${recipe.name}</h4>
             <div class="recipe-mats-list mb-3">
                 ${recipe.mats.map(m => `
@@ -171,7 +191,7 @@ window.startCraftProject = async (recipeId) => {
         const craftRef = collection(db, 'users', currentUser.uid, 'craft_projects');
         const userProgress = {};
         recipe.mats.forEach(m => {
-            userProgress[m.name] = 0; // Inicializar cantidad conseguida en 0
+            userProgress[m.name] = 0;
         });
 
         await addDoc(craftRef, {
@@ -210,13 +230,54 @@ window.deleteCraftProject = async (projectId) => {
     }
 };
 
+// ACTIVAR MODAL DE ELECCIÓN SUCCESS / FAIL
+window.triggerCraftCompletion = (projectId) => {
+    activeCompletingProjectId = projectId;
+    const overlay = document.getElementById('celebrationOverlay');
+    if (overlay) overlay.style.display = 'flex';
+};
+
+// RESOLVER EL INTENTO DE CRAFT (SUCCESS O FAIL) Y ACTUALIZAR ESTADÍSTICAS
+window.resolveCraftAttempt = async (resultType) => {
+    const overlay = document.getElementById('celebrationOverlay');
+    if (overlay) overlay.style.display = 'none';
+
+    if (!currentUser || !activeCompletingProjectId) return;
+
+    try {
+        // Actualizar contadores en Firestore
+        craftStats.success = Number(craftStats.success) || 0;
+        craftStats.fail = Number(craftStats.fail) || 0;
+
+        if (resultType === 'SUCCESS') {
+            craftStats.success++;
+            window.addNotification(`🎉 ¡Crafteo exitoso (Success)! Ítem conseguido.`);
+        } else {
+            craftStats.fail++;
+            window.addNotification(`💥 Intento de crafteo fallido (Fail). ¡A seguir intentándolo!`);
+        }
+
+        const statsDocRef = doc(db, 'users', currentUser.uid, 'settings', 'craft_stats');
+        await setDoc(statsDocRef, craftStats);
+
+        // Eliminar el proyecto completado de la lista activa
+        const docRef = doc(db, 'users', currentUser.uid, 'craft_projects', activeCompletingProjectId);
+        await deleteDoc(docRef);
+
+        activeCompletingProjectId = null;
+        updateCraftStatsUI();
+    } catch (err) {
+        console.error("Error al registrar resultado de crafteo:", err);
+    }
+};
+
 export function renderCraftProjects() {
     const grid = document.getElementById('activeCraftProjects');
     if (!grid) return;
 
     if (craftProjects.length === 0) {
         grid.innerHTML = `
-            <div class="card text-center py-4 w-100">
+            <div class="card text-center py-5 w-100">
                 <p class="text-muted"><i class="fa-solid fa-hammer mb-2 fs-lg"></i><br>No tienes proyectos de crafteo activos.<br>Selecciona una receta a la izquierda para comenzar.</p>
             </div>
         `;
@@ -235,12 +296,6 @@ export function renderCraftProjects() {
         const pct = totalRequired > 0 ? Math.floor((totalCurrent / totalRequired) * 100) : 0;
         const isCompleted = pct >= 100;
 
-        // FIESTA CELEBRACIÓN AL ALCANZAR EL 100%
-        if (isCompleted && p.status !== 'COMPLETED') {
-            const overlay = document.getElementById('celebrationOverlay');
-            if (overlay) overlay.style.display = 'flex';
-        }
-
         return `
             <div class="card mb-3 border-cyan">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -253,9 +308,12 @@ export function renderCraftProjects() {
                 <div class="progress-bar-bg mb-3" style="background: rgba(255,255,255,0.05); border-radius: 6px; height: 12px; overflow: hidden; border: 1px solid rgba(255,0,55,0.2);">
                     <div class="progress-bar-fill" style="width: ${pct}%; background: linear-gradient(90deg, #ff0037, #f59e0b); height: 100%;"></div>
                 </div>
-                <div class="d-flex justify-content-between fs-sm mb-3">
+                <div class="d-flex justify-content-between align-items-center fs-sm mb-3">
                     <span class="text-muted">Progreso Global:</span>
-                    <strong class="${isCompleted ? 'text-green' : 'text-gold'}">${pct}% Completado</strong>
+                    <div class="d-flex align-items-center gap-3">
+                        <strong class="${isCompleted ? 'text-green' : 'text-gold'}">${pct}% Completado</strong>
+                        ${isCompleted ? `<button class="btn btn-primary btn-sm" onclick="window.triggerCraftCompletion('${p.id}')"><i class="fa-solid fa-hammer me-1"></i> ¡A Craftear!</button>` : ''}
+                    </div>
                 </div>
 
                 <div class="mats-progress-list">
@@ -285,4 +343,19 @@ export function renderCraftProjects() {
 function updateDashboardCraftCount() {
     const countEl = document.getElementById('dashCraftCount');
     if (countEl) countEl.textContent = craftProjects.length;
+}
+
+function updateCraftStatsUI() {
+    const successEl = document.getElementById('craftSuccessCount');
+    const failEl = document.getElementById('craftFailCount');
+    const ratioBadge = document.getElementById('craftRatioBadge');
+
+    const s = Number(craftStats.success) || 0;
+    const f = Number(craftStats.fail) || 0;
+    const total = s + f;
+    const ratio = total > 0 ? Math.round((s / total) * 100) : 0;
+
+    if (successEl) successEl.textContent = s;
+    if (failEl) failEl.textContent = f;
+    if (ratioBadge) ratioBadge.textContent = `Tasa de Éxito: ${ratio}%`;
 }
