@@ -16,12 +16,12 @@ import { initRaidsManager } from './raids.js';
 let notifications = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 L2 Universe - Sistema inicializado correctamente.");
+    console.log("🚀 L2 Universe - Suite Privada iniciada correctamente.");
     setupGlobalNavigation();
     setupAuthListeners();
 });
 
-// Configuración de Navegación SPA
+// Configuración de Navegación SPA y Utilidades Globales
 function setupGlobalNavigation() {
     window.navigateTo = (targetSectionId, event) => {
         if (event) event.preventDefault();
@@ -108,7 +108,7 @@ function renderNotifications() {
     `).join('');
 }
 
-// Autenticación y Firebase
+// Autenticación, Firebase y Control de Sesión
 function setupAuthListeners() {
     const formAuth = document.getElementById('formAuth');
     if (formAuth) {
@@ -187,13 +187,13 @@ function setupAuthListeners() {
             if (dashUserNameEl) dashUserNameEl.textContent = user.displayName || user.email.split('@')[0];
             if (userAvatarEl && user.photoURL) userAvatarEl.src = user.photoURL;
 
-            // Inicializar módulos privados con el UID del usuario
+            // Inicializar todos los módulos con el UID del usuario conectado
             initAccountsManager(user);
             initCraftingManager(user);
             initTrackerManager(user);
             initRaidsManager(user);
         } else {
-            console.log("Ningún usuario autenticado. Mostrando login.");
+            console.log("Ningún usuario autenticado. Mostrando pantalla de login.");
             if (loginContainer) loginContainer.style.display = 'flex';
             if (appContainer) appContainer.style.display = 'none';
 
