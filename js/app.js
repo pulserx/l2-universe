@@ -1,4 +1,4 @@
-import { auth, db } from './firebase-config.js';
+import { auth } from './firebase-config.js';
 import { 
     onAuthStateChanged, 
     signInWithPopup, 
@@ -8,12 +8,11 @@ import {
     sendPasswordResetEmail,
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 import { initAccountsManager, createAccount, addCharacterToAccount, renderAccounts } from './accounts-manager.js';
 import { initCraftingManager } from './crafting.js';
 import { initTrackerManager, addFarmLog } from './tracker.js';
-import { initRaidsManager, RAID_BOSSES_DB } from './raids.js';
+import { initRaidsManager } from './raids.js';
 
 let authTabMode = 'login';
 let systemNotifications = [];
@@ -22,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-onAuthStateChanged(auth, (user) => {
+// LECTURA Y PERSISTENCIA DE DATOS EN TIEMPO REAL AL CAMBIAR O RECARGAR SESIÓN
+onAuthStateChanged(auth, async (user) => {
     const publicContainer = document.getElementById('publicLoginContainer');
     const privateContainer = document.getElementById('privateAppContainer');
 
@@ -30,10 +30,16 @@ onAuthStateChanged(auth, (user) => {
         if (publicContainer) publicContainer.style.display = 'none';
         if (privateContainer) privateContainer.style.display = 'flex';
 
-        document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40';
-        document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-        document.getElementById('dashUserName').textContent = user.displayName || user.email.split('@')[0];
+        // Actualización de elementos de usuario en el DOM
+        const avatarEl = document.getElementById('userAvatar');
+        const nameEl = document.getElementById('userName');
+        const dashNameEl = document.getElementById('dashUserName');
 
+        if (avatarEl) avatarEl.src = user.photoURL || 'https://via.placeholder.com/40';
+        if (nameEl) nameEl.textContent = user.displayName || user.email.split('@')[0];
+        if (dashNameEl) dashNameEl.textContent = user.displayName || user.email.split('@')[0];
+
+        // Inicialización de escuchadores en tiempo real (onSnapshot) por UID en Firestore
         initAccountsManager(user);
         initCraftingManager(user);
         initTrackerManager(user);
@@ -44,6 +50,7 @@ onAuthStateChanged(auth, (user) => {
         if (publicContainer) publicContainer.style.display = 'flex';
         if (privateContainer) privateContainer.style.display = 'none';
 
+        // Restablecer estados a nulo si se cierra la sesión
         initAccountsManager(null);
         initCraftingManager(null);
         initTrackerManager(null);
@@ -71,13 +78,13 @@ window.switchAuthTab = (mode) => {
     const btnSubmit = document.getElementById('btnAuthSubmit');
 
     if (mode === 'login') {
-        btnLogin.classList.add('active');
-        btnRegister.classList.remove('active');
-        btnSubmit.textContent = 'Ingresar';
+        if (btnLogin) btnLogin.classList.add('active');
+        if (btnRegister) btnRegister.classList.remove('active');
+        if (btnSubmit) btnSubmit.textContent = 'Ingresar';
     } else {
-        btnRegister.classList.add('active');
-        btnLogin.classList.remove('active');
-        btnSubmit.textContent = 'Crear Cuenta';
+        if (btnRegister) btnRegister.classList.add('active');
+        if (btnLogin) btnLogin.classList.remove('active');
+        if (btnSubmit) btnSubmit.textContent = 'Crear Cuenta';
     }
 };
 
@@ -86,13 +93,13 @@ window.handleGoogleLogin = async () => {
         await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (e) {
         console.error("Error al iniciar sesión con Google:", e);
-        alert("Error de autenticación con Google.");
+        alert("Error de autenticación con Google: " + e.message);
     }
 };
 
 window.handleForgotPassword = async (event) => {
     event.preventDefault();
-    const email = document.getElementById('authEmail').value.trim();
+    const email = document.getElementById('authEmail')?.value.trim();
     if (!email) {
         alert("Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.");
         return;
@@ -144,7 +151,7 @@ function renderNotifications() {
     }
 }
 
-// FUNCIÓN AUXILIAR REUTILIZABLE PARA CERRAR MODALES ESTRUCTURALMENTE
+// FUNCIÓN AUXILIAR PARA CERRAR MODALES ESTRUCTURALMENTE Y DE FORMA INMEDIATA
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -154,6 +161,7 @@ function closeModal(modalId) {
 }
 
 function setupEventListeners() {
+    // AUTENTICACIÓN
     document.getElementById('formAuth')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('authEmail').value.trim();
@@ -171,84 +179,104 @@ function setupEventListeners() {
         }
     });
 
-    // CIERRE AUTOMÁTICO DE MODAL: NUEVA CUENTA
+    // CREAR CUENTA
     document.getElementById('formAddAccount')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const accountData = {
-            server: document.getElementById('accServer').value.trim(),
-            chronicle: document.getElementById('accChronicle').value.trim(),
-            username: document.getElementById('accUsername').value.trim(),
-            secretNotes: document.getElementById('accNotes').value.trim()
-        };
-        
-        // Cierre inmediato del modal y reset
-        closeModal('addAccountModal');
-        e.target.reset();
+        const server = document.getElementById('accServer')?.value.trim();
+        const chronicle = document.getElementById('accChronicle')?.value.trim();
+        const username = document.getElementById('accUsername')?.value.trim();
+        const secretNotes = document.getElementById('accNotes')?.value.trim();
 
-        await createAccount(accountData);
-        window.addNotification("✅ Cuenta de juego guardada con éxito.");
+        if (!server || !chronicle || !username) return;
+
+        try {
+            await createAccount({ server, chronicle, username, secretNotes });
+            window.addNotification("✅ Cuenta de juego guardada con éxito.");
+            
+            // Cierre del modal y limpieza del formulario
+            closeModal('addAccountModal');
+            e.target.reset();
+        } catch (err) {
+            console.error("Error guardando cuenta:", err);
+            alert("Ocurrió un error al intentar guardar la cuenta.");
+        }
     });
 
-    // CIERRE AUTOMÁTICO DE MODAL: AGREGAR PERSONAJE
+    // CREAR PERSONAJE
     document.getElementById('formAddChar')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const accountId = document.getElementById('charAccountId').value;
-        const charData = {
-            name: document.getElementById('charName').value.trim(),
-            className: document.getElementById('charClass').value.trim(),
-            level: parseInt(document.getElementById('charLevel').value, 10),
-            equipment: document.getElementById('charGear').value.trim()
-        };
+        const accountId = document.getElementById('charAccountId')?.value;
+        const name = document.getElementById('charName')?.value.trim();
+        const className = document.getElementById('charClass')?.value.trim();
+        const level = parseInt(document.getElementById('charLevel')?.value, 10);
+        const equipment = document.getElementById('charGear')?.value.trim();
 
-        // Cierre inmediato del modal y reset
-        closeModal('addCharModal');
-        e.target.reset();
+        if (!accountId || !name || !className) return;
 
-        await addCharacterToAccount(accountId, charData);
-        window.addNotification("✅ Personaje añadido con éxito.");
+        try {
+            await addCharacterToAccount(accountId, { name, className, level, equipment });
+            window.addNotification("✅ Personaje añadido con éxito.");
+
+            // Cierre del modal y limpieza del formulario
+            closeModal('addCharModal');
+            e.target.reset();
+        } catch (err) {
+            console.error("Error añadiendo personaje:", err);
+            alert("Ocurrió un error al intentar añadir el personaje.");
+        }
     });
 
+    // REGISTRO DE FARMEO DIARIO
     document.getElementById('formAddFarmLog')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await addFarmLog({
-            date: new Date().toLocaleDateString(),
-            adena: parseInt(document.getElementById('farmAdena').value, 10) || 0,
-            ancientAdena: parseInt(document.getElementById('farmAncientAdena').value, 10) || 0,
-            donateCoins: parseInt(document.getElementById('farmDonateCoins').value, 10) || 0,
-            ls76: parseInt(document.getElementById('farmLifeStone76').value, 10) || 0,
-            midLs76: parseInt(document.getElementById('farmMidLifeStone76').value, 10) || 0,
-            topLs76: parseInt(document.getElementById('farmTopLifeStone76').value, 10) || 0,
-            giantsCodex: parseInt(document.getElementById('farmGiantsCodex').value, 10) || 0,
-            scrolls: parseInt(document.getElementById('farmScrolls').value, 10) || 0,
-            letters: parseInt(document.getElementById('farmLetters').value, 10) || 0,
-            hearts: parseInt(document.getElementById('farmHearts').value, 10) || 0
-        });
-        e.target.reset();
-        window.addNotification("✅ Jornada de farmeo registrada correctamente.");
+        try {
+            await addFarmLog({
+                date: new Date().toLocaleDateString(),
+                adena: parseInt(document.getElementById('farmAdena')?.value, 10) || 0,
+                ancientAdena: parseInt(document.getElementById('farmAncientAdena')?.value, 10) || 0,
+                donateCoins: parseInt(document.getElementById('farmDonateCoins')?.value, 10) || 0,
+                ls76: parseInt(document.getElementById('farmLifeStone76')?.value, 10) || 0,
+                midLs76: parseInt(document.getElementById('farmMidLifeStone76')?.value, 10) || 0,
+                topLs76: parseInt(document.getElementById('farmTopLifeStone76')?.value, 10) || 0,
+                giantsCodex: parseInt(document.getElementById('farmGiantsCodex')?.value, 10) || 0,
+                scrolls: parseInt(document.getElementById('farmScrolls')?.value, 10) || 0,
+                letters: parseInt(document.getElementById('farmLetters')?.value, 10) || 0,
+                hearts: parseInt(document.getElementById('farmHearts')?.value, 10) || 0
+            });
+            window.addNotification("✅ Jornada de farmeo registrada correctamente.");
+            e.target.reset();
+        } catch (err) {
+            console.error("Error registrando jornada:", err);
+            alert("Ocurrió un error al intentar guardar el farmeo.");
+        }
     });
 
-    // CIERRE AUTOMÁTICO DE MODAL: TIMER RAID
+    // TIMER RAID
     document.getElementById('formRaidTimer')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const user = auth.currentUser;
         if (!user) return;
 
-        const bossId = document.getElementById('raidBossId').value;
-        const deathTime = document.getElementById('raidDeathTime').value;
+        const bossId = document.getElementById('raidBossId')?.value;
+        const deathTime = document.getElementById('raidDeathTime')?.value;
 
-        // Cierre inmediato del modal y reset
-        closeModal('addRaidTimerModal');
-        e.target.reset();
+        if (!bossId || !deathTime) return;
 
         try {
+            const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
             await addDoc(collection(db, 'users', user.uid, 'raid_timers'), {
                 bossId,
                 deathTime,
                 createdAt: serverTimestamp()
             });
             window.addNotification("⏰ Horario de Raid Boss registrado con éxito.");
+
+            // Cierre del modal y limpieza del formulario
+            closeModal('addRaidTimerModal');
+            e.target.reset();
         } catch (err) {
             console.error("Error al registrar horario:", err);
+            alert("No se pudo guardar el horario del Raid Boss.");
         }
     });
 }
