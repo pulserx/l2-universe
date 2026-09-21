@@ -144,6 +144,15 @@ function renderNotifications() {
     }
 }
 
+// FUNCIÓN AUXILIAR REUTILIZABLE PARA CERRAR MODALES ESTRUCTURALMENTE
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+    }
+}
+
 function setupEventListeners() {
     document.getElementById('formAuth')?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -162,29 +171,41 @@ function setupEventListeners() {
         }
     });
 
+    // CIERRE AUTOMÁTICO DE MODAL: NUEVA CUENTA
     document.getElementById('formAddAccount')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await createAccount({
+        const accountData = {
             server: document.getElementById('accServer').value.trim(),
             chronicle: document.getElementById('accChronicle').value.trim(),
             username: document.getElementById('accUsername').value.trim(),
             secretNotes: document.getElementById('accNotes').value.trim()
-        });
+        };
+        
+        // Cierre inmediato del modal y reset
+        closeModal('addAccountModal');
         e.target.reset();
-        document.getElementById('addAccountModal').style.display = 'none';
+
+        await createAccount(accountData);
+        window.addNotification("✅ Cuenta de juego guardada con éxito.");
     });
 
+    // CIERRE AUTOMÁTICO DE MODAL: AGREGAR PERSONAJE
     document.getElementById('formAddChar')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const accountId = document.getElementById('charAccountId').value;
-        await addCharacterToAccount(accountId, {
+        const charData = {
             name: document.getElementById('charName').value.trim(),
             className: document.getElementById('charClass').value.trim(),
             level: parseInt(document.getElementById('charLevel').value, 10),
             equipment: document.getElementById('charGear').value.trim()
-        });
+        };
+
+        // Cierre inmediato del modal y reset
+        closeModal('addCharModal');
         e.target.reset();
-        document.getElementById('addCharModal').style.display = 'none';
+
+        await addCharacterToAccount(accountId, charData);
+        window.addNotification("✅ Personaje añadido con éxito.");
     });
 
     document.getElementById('formAddFarmLog')?.addEventListener('submit', async (e) => {
@@ -206,6 +227,7 @@ function setupEventListeners() {
         window.addNotification("✅ Jornada de farmeo registrada correctamente.");
     });
 
+    // CIERRE AUTOMÁTICO DE MODAL: TIMER RAID
     document.getElementById('formRaidTimer')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const user = auth.currentUser;
@@ -214,14 +236,16 @@ function setupEventListeners() {
         const bossId = document.getElementById('raidBossId').value;
         const deathTime = document.getElementById('raidDeathTime').value;
 
+        // Cierre inmediato del modal y reset
+        closeModal('addRaidTimerModal');
+        e.target.reset();
+
         try {
             await addDoc(collection(db, 'users', user.uid, 'raid_timers'), {
                 bossId,
                 deathTime,
                 createdAt: serverTimestamp()
             });
-            document.getElementById('addRaidTimerModal').style.display = 'none';
-            e.target.reset();
             window.addNotification("⏰ Horario de Raid Boss registrado con éxito.");
         } catch (err) {
             console.error("Error al registrar horario:", err);

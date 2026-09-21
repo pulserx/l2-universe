@@ -404,18 +404,48 @@ body {
     margin-bottom: 0.25rem;
 }
 
-.form-control {
+/* ESTILO VISUAL DE CAMPOS DE TEXTO E INPUTS (SIN FONDO BLANCO) */
+.form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="datetime-local"],
+select,
+textarea {
     width: 100%;
     padding: 0.65rem 0.8rem;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-color);
+    background-color: #121216 !important;
+    border: 1px solid #33333e !important;
     border-radius: 6px;
-    color: #fff;
+    color: #ffffff !important;
     outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-control:focus {
-    border-color: var(--neon-cyan);
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--neon-cyan) !important;
+    background-color: #181820 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(255, 0, 55, 0.3);
+}
+
+/* Evitar el fondo blanco por autocompletado de los navegadores */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #121216 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 /* SECCIONES Y CONTENEDOR SPA */
@@ -665,6 +695,10 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 1000;
+}
+
+.modal-backdrop.hidden {
+    display: none !important;
 }
 
 .modal-card {
