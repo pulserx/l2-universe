@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>L2 Universe - Suite Privada de Gestión Lineage 2</title>
+
+    <!-- FAVICON Y LOGO PESTAÑA DEL NAVEGADOR -->
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="icon" type="image/png" href="img/logo.png">
+
     <!-- FontAwesome & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
@@ -20,7 +26,7 @@
     <div id="publicLoginContainer" class="login-screen-container">
         <div class="login-card card">
             <div class="login-header">
-                <i class="fa-solid fa-khanda logo-icon"></i>
+                <img src="img/logo.png" alt="L2 Universe Logo" class="brand-logo-img mb-2">
                 <h1 class="login-title">L2 <span class="text-cyan">UNIVERSE</span></h1>
                 <p class="login-subtitle">Suite Privada de Gestión Lineage 2</p>
             </div>
@@ -67,7 +73,7 @@
         <nav class="navbar">
             <div class="nav-container">
                 <a href="#" class="brand-logo" onclick="window.navigateTo('dashboard')">
-                    <i class="fa-solid fa-khanda logo-icon"></i>
+                    <img src="img/logo.png" alt="L2 Universe Logo" class="navbar-logo-img">
                     <span class="brand-text">L2 <span class="text-cyan">UNIVERSE</span></span>
                 </a>
 
@@ -486,7 +492,6 @@
             const colors = new Float32Array(starsCount * 3);
             const sizes = new Float32Array(starsCount);
             
-            // Datos para parpadeo orgánico (fase y velocidad)
             const twinklePhases = new Float32Array(starsCount);
             const twinkleSpeeds = new Float32Array(starsCount);
             const fallSpeeds = new Float32Array(starsCount);
@@ -501,7 +506,6 @@
                 colors[i * 3 + 1] = color.g;
                 colors[i * 3 + 2] = color.b;
 
-                // Variabilidad natural de tamaños
                 sizes[i] = 1.2 + Math.random() * 3.8;
 
                 twinklePhases[i] = Math.random() * Math.PI * 2;
@@ -525,7 +529,7 @@
             const starField = new THREE.Points(geometry, starMaterial);
             scene.add(starField);
 
-            // SISTEMA DE ESTRELLAS FUGACES / COMETAS REALISTAS (DEGRADADO ALFA)
+            // SISTEMA DE ESTRELLAS FUGACES / COMETAS REALISTAS
             const shootingStars = [];
             const maxShootingStars = 2;
 
@@ -539,7 +543,7 @@
                 gradient.addColorStop(0, 'rgba(0,0,0,0)');
                 gradient.addColorStop(0.6, 'rgba(255, 100, 150, 0.2)');
                 gradient.addColorStop(0.9, 'rgba(200, 220, 255, 0.7)');
-                gradient.addColorStop(1, 'rgba(255, 255, 255, 1)'); // Cabeza brillante
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
 
                 ctx.fillStyle = gradient;
                 ctx.fillRect(0, 0, 128, 16);
@@ -564,8 +568,8 @@
                 const startZ = -100 - Math.random() * 200;
 
                 sprite.position.set(startX, startY, startZ);
-                sprite.scale.set(60, 4, 1); // Aspecto alargado
-                sprite.rotation.z = -Math.PI / 4; // Diagonal natural
+                sprite.scale.set(60, 4, 1);
+                sprite.rotation.z = -Math.PI / 4;
 
                 scene.add(sprite);
 
@@ -586,7 +590,6 @@
                 requestAnimationFrame(animate);
                 const elapsedTime = clock.getElapsedTime();
 
-                // 1. Movimiento en cascada pasiva + Parpadeo orgánico individual
                 const posArr = starField.geometry.attributes.position.array;
                 
                 for (let i = 0; i < starsCount; i++) {
@@ -599,10 +602,8 @@
                 }
                 starField.geometry.attributes.position.needsUpdate = true;
 
-                // Parpadeo sutil estelar
                 starMaterial.opacity = 0.75 + Math.sin(elapsedTime * 1.5) * 0.15;
 
-                // 2. Control aleatorio y suave de estrellas fugaces / cometas
                 if (shootingStars.length < maxShootingStars && Math.random() < 0.008) {
                     spawnShootingStar();
                 }
@@ -613,7 +614,6 @@
                     st.mesh.position.x += st.speedX;
                     st.mesh.position.y += st.speedY;
 
-                    // Fade in / Fade out progresivo
                     if (st.life < 20) {
                         st.mesh.material.opacity = st.life / 20;
                     } else if (st.life > st.maxLife - 20) {
