@@ -16,7 +16,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Persistencia por pestaña: si la pestaña se cierra, la sesión finaliza automáticamente y exige login de nuevo.
+// Sincronizar persistencia por sesión de navegador activa
 setPersistence(auth, browserSessionPersistence).catch((error) => {
     console.error("Error al configurar la persistencia de sesión:", error);
 });

@@ -39,6 +39,8 @@ body {
 .text-end { text-align: right; }
 .d-flex { display: flex; }
 .gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.align-items-center { align-items: center; }
 .w-100 { width: 100%; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-3 { margin-bottom: 0.75rem; }
@@ -49,29 +51,27 @@ body {
 .center-block { margin-left: auto; margin-right: auto; }
 .max-w-500 { max-width: 500px; }
 
-/* ICONOS Y IMÁGENES L2 */
-.l2-item-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    vertical-align: middle;
-    border-radius: 4px;
+/* ÍCONOS Y CONTENEDORES DE RAIDS COMPACTOS Y ESPACIOSOS */
+.raid-icon-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
 }
 
-.l2-mini-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    vertical-align: middle;
-    margin-right: 0.3rem;
+.raid-boss-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.raid-boss-img {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid var(--neon-cyan);
+.raid-card h3 {
+    font-size: 1.05rem;
+    line-height: 1.2;
+    margin-top: 0.2rem;
 }
 
 /* CAMPANITA NOTIFICACIONES */
@@ -306,6 +306,7 @@ body {
     height: 34px;
     border-radius: 50%;
     border: 2px solid var(--neon-cyan);
+    object-fit: cover;
 }
 
 /* BOTONES Y FORMS TOUCH OPTIMIZED */
@@ -331,16 +332,6 @@ body {
 
 .btn-primary:hover {
     box-shadow: 0 0 15px rgba(255, 0, 55, 0.5);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #10b981, #047857);
-    color: #fff;
-}
-
-.btn-danger-craft {
-    background: linear-gradient(135deg, #ef4444, #991b1b);
-    color: #fff;
 }
 
 .btn-outline {
@@ -433,7 +424,6 @@ textarea:focus {
     box-shadow: 0 0 8px rgba(255, 0, 55, 0.3);
 }
 
-/* Evitar el fondo blanco por autocompletado de los navegadores */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus,
@@ -482,7 +472,6 @@ select:-webkit-autofill:focus {
 
 .border-cyan { border-color: var(--neon-cyan); }
 
-/* STATS Y TARJETAS */
 .quick-stats-grid, .tracker-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -505,42 +494,6 @@ select:-webkit-autofill:focus {
     margin-top: 0.25rem;
 }
 
-/* CRAFTING CENTRADO Y ITEMS */
-.mat-preview-item {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 0.6rem 0.8rem;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.85rem;
-}
-
-.mat-tracker-row {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 0.75rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-    border-left: 3px solid var(--neon-cyan);
-}
-
-.mat-add-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.mat-input-sm {
-    width: 75px !important;
-    text-align: center;
-    padding: 0.3rem !important;
-}
-
-/* RAIDS GUÍA Y ACCESO PASO A PASO */
 .raid-guide-box {
     background: rgba(0, 0, 0, 0.4);
     border-left: 3px solid var(--neon-gold);
@@ -559,42 +512,6 @@ select:-webkit-autofill:focus {
     font-size: 0.8rem;
 }
 
-/* CELEBRACIÓN Y CONFETI FIESTA */
-.celebration-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.celebration-content {
-    max-width: 500px;
-    padding: 2.5rem;
-    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.celebration-title {
-    font-size: 1.6rem;
-    color: var(--neon-cyan);
-}
-
-.celebration-emojis {
-    font-size: 2.5rem;
-    margin-top: 1rem;
-    letter-spacing: 0.5rem;
-}
-
-@keyframes popIn {
-    0% { transform: scale(0.5); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* CUENTAS, CRAFT & TRACKER */
 .accounts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -605,58 +522,6 @@ select:-webkit-autofill:focus {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-}
-
-.account-credentials {
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 8px;
-    padding: 0.75rem;
-}
-
-.char-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 0.5rem;
-}
-
-.char-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.char-item {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.5rem;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 3px solid var(--neon-purple);
-}
-
-.materials-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 0.6rem;
-}
-
-.progress-bar-container {
-    width: 100%;
-    height: 12px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
-    overflow: hidden;
-    margin: 0.75rem 0;
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
-    box-shadow: 0 0 10px var(--neon-cyan);
-    transition: width 0.3s ease;
 }
 
 .tracker-layout-grid {
@@ -695,10 +560,6 @@ select:-webkit-autofill:focus {
     align-items: center;
     justify-content: center;
     z-index: 1000;
-}
-
-.modal-backdrop.hidden {
-    display: none !important;
 }
 
 .modal-card {
