@@ -226,235 +226,39 @@
                 </div>
             </section>
 
-            <!-- SECCIÓN: REGISTRO DE FARMEO DIARIO -->
+            <!-- SECCIÓN: REGISTRO DE FARMEO DIARIO (DISEÑO DE UNA SOLA VENTANA CON BOTÓN REGISTRAR) -->
             <section id="section-tracker" class="app-section">
                 <div class="section-header mb-3">
                     <div>
                         <h2><i class="fa-solid fa-coins text-gold"></i> Registro de Farmeo Diario</h2>
-                        <p>Registra tus ingresos por jornada con subsecciones detalladas de ítems.</p>
+                        <p>Historial centralizado de tus ingresos y ganancias por jornada.</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="document.getElementById('addFarmModal').style.display='flex'">
+                            <i class="fa-solid fa-plus-circle me-1"></i> Registrar
+                        </button>
                     </div>
                 </div>
 
-                <div class="tracker-main-layout">
-                    <div class="tracker-left-col">
-                        <div class="card">
-                            <h3 class="mb-3 text-cyan"><i class="fa-solid fa-plus-circle me-1"></i> Registrar Farmeo de Hoy</h3>
-                            <form id="formAddFarmLog" class="mt-2">
-                                
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-coins text-gold"></i> Monedas y Recursos</h4>
-                                    
-                                    <div class="farm-input-row">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-coins tracker-item-icon text-gold"></i>
-                                            <span>Adena</span>
-                                        </div>
-                                        <input type="text" id="farmAdena" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-
-                                    <div class="farm-input-row">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-gem tracker-item-icon text-purple"></i>
-                                            <span>Ancient Adena</span>
-                                        </div>
-                                        <input type="text" id="farmAncientAdena" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-
-                                    <div class="farm-input-row">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-circle-dollar-to-slot tracker-item-icon text-cyan"></i>
-                                            <span>Donate Coins</span>
-                                        </div>
-                                        <input type="text" id="farmDonateCoins" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-
-                                    <div class="farm-input-row">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-book tracker-item-icon text-gold"></i>
-                                            <span>Giant's Codex</span>
-                                        </div>
-                                        <input type="text" id="farmGiantsCodex" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-cubes text-green"></i> Life Stones</h4>
-                                    
-                                    <div class="form-group mb-2">
-                                        <label>Tipo de Life Stone</label>
-                                        <select id="lsTypeSelect" class="form-control">
-                                            <option value="Life Stone">Life Stone (Normal)</option>
-                                            <option value="Mid-Grade Life Stone">Mid-Grade Life Stone</option>
-                                            <option value="High-Grade Life Stone">High-Grade Life Stone</option>
-                                            <option value="Top-Grade Life Stone">Top-Grade Life Stone</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group mb-2">
-                                        <label>Nivel del Life Stone</label>
-                                        <select id="lsLevelSelect" class="form-control">
-                                            <option value="lvl 70">Nivel 70</option>
-                                            <option value="lvl 76" selected>Nivel 76</option>
-                                            <option value="lvl 80">Nivel 80</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="farm-input-row mt-2">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-cubes tracker-item-icon text-green"></i>
-                                            <span>Cantidad</span>
-                                        </div>
-                                        <input type="text" id="farmLifeStonesQty" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-scroll text-cyan"></i> Enchant Scrolls</h4>
-                                    
-                                    <div class="form-group mb-2">
-                                        <label>Variante</label>
-                                        <select id="scrollVariantSelect" class="form-control">
-                                            <option value="Scroll">Normal Scroll</option>
-                                            <option value="Blessed Scroll">Blessed Scroll (Bela)</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group mb-2">
-                                        <label>Categoría</label>
-                                        <select id="scrollCategorySelect" class="form-control">
-                                            <option value="Weapon">Weapon (Arma)</option>
-                                            <option value="Armor">Armor (Armadura)</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group mb-2">
-                                        <label>Grado</label>
-                                        <select id="scrollGradeSelect" class="form-control">
-                                            <option value="Grade D">Grado D</option>
-                                            <option value="Grade C">Grado C</option>
-                                            <option value="Grade B">Grado B</option>
-                                            <option value="Grade A" selected>Grado A</option>
-                                            <option value="Grade S">Grado S</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="farm-input-row mt-2">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-scroll tracker-item-icon text-cyan"></i>
-                                            <span>Cantidad</span>
-                                        </div>
-                                        <input type="text" id="farmScrollsQty" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-font text-purple"></i> Letras Evento (LINEAGE / GIRAN)</h4>
-                                    
-                                    <div class="form-group mb-2">
-                                        <label>Letra Específica</label>
-                                        <select id="letterSelect" class="form-control">
-                                            <option value="Letra L">Letra L</option>
-                                            <option value="Letra I">Letra I</option>
-                                            <option value="Letra N">Letra N</option>
-                                            <option value="Letra E">Letra E</option>
-                                            <option value="Letra A">Letra A</option>
-                                            <option value="Letra G">Letra G</option>
-                                            <option value="Letra R">Letra R</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="farm-input-row mt-2">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-font tracker-item-icon text-purple"></i>
-                                            <span>Cantidad</span>
-                                        </div>
-                                        <input type="text" id="farmLettersQty" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-heart text-cyan"></i> Corazones de Evento</h4>
-                                    
-                                    <div class="form-group mb-2">
-                                        <label>Número de Corazón</label>
-                                        <select id="heartSelect" class="form-control">
-                                            <option value="Corazón 1">Corazón #1</option>
-                                            <option value="Corazón 2">Corazón #2</option>
-                                            <option value="Corazón 3">Corazón #3</option>
-                                            <option value="Corazón 4">Corazón #4</option>
-                                            <option value="Corazón 5">Corazón #5</option>
-                                            <option value="Corazón 6">Corazón #6</option>
-                                            <option value="Corazón 7">Corazón #7</option>
-                                            <option value="Corazón 8">Corazón #8</option>
-                                            <option value="Corazón 9">Corazón #9</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="farm-input-row mt-2">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-heart tracker-item-icon text-cyan"></i>
-                                            <span>Cantidad</span>
-                                        </div>
-                                        <input type="text" id="farmHeartsQty" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="tracker-category-box mb-3">
-                                    <h4 class="tracker-cat-title"><i class="fa-solid fa-feather text-gold"></i> Quest Items Interlude</h4>
-                                    
-                                    <div class="form-group mb-2">
-                                        <label>Seleccionar Ítem de Quest</label>
-                                        <select id="questItemSelect" class="form-control">
-                                            <option value="Fangs of Wyrm">Fangs of Wyrm</option>
-                                            <option value="Pagan Totem">Pagan Totem</option>
-                                            <option value="Torch">Torch</option>
-                                            <option value="Bones of Plains Dino">Bones of Plains Dino</option>
-                                            <option value="Stakato Claw">Stakato Claw</option>
-                                            <option value="Dagger Edge">Dagger Edge</option>
-                                            <option value="Tamrin Orc Amulet">Tamrin Orc Amulet</option>
-                                            <option value="Enchanted Golem Shard">Enchanted Golem Shard</option>
-                                            <option value="Dion Gem">Dion Gem</option>
-                                            <option value="Tyrannosaurus Claw">Tyrannosaurus Claw</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="farm-input-row mt-2">
-                                        <div class="farm-item-label">
-                                            <i class="fa-solid fa-feather tracker-item-icon text-gold"></i>
-                                            <span>Cantidad</span>
-                                        </div>
-                                        <input type="text" id="farmQuestItemQty" class="form-control farm-val-input" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Jornada
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="tracker-right-col">
-                        <div class="card">
-                            <h3 class="mb-3 text-cyan"><i class="fa-solid fa-list me-1"></i> Historial de Jornadas</h3>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Adena</th>
-                                            <th>A. Adena</th>
-                                            <th>Coins</th>
-                                            <th>Detalle Ítems</th>
-                                            <th class="text-end">Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="farmLogsTableBody">
-                                        <!-- Generado por JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <!-- VENTANA ÚNICA DE HISTORIAL -->
+                <div class="card">
+                    <h3 class="mb-3 text-cyan"><i class="fa-solid fa-list me-1"></i> Historial de Jornadas de Farmeo</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Adena</th>
+                                    <th>A. Adena</th>
+                                    <th>Coins</th>
+                                    <th>Detalle Ítems</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="farmLogsTableBody">
+                                <!-- Generado por JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -484,6 +288,211 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- MODAL: REGISTRAR NUEVA JORNADA DE FARMEO -->
+    <div id="addFarmModal" class="modal-backdrop" style="display:none;">
+        <div class="modal-card" style="max-width: 550px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3 class="text-cyan"><i class="fa-solid fa-coins me-1"></i> Registrar Farmeo de Hoy</h3>
+                <button class="btn-icon" onclick="window.closeModal('addFarmModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formAddFarmLog" class="mt-2">
+                
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-coins text-gold"></i> Monedas y Recursos</h4>
+                    
+                    <div class="farm-input-row">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-coins tracker-item-icon text-gold"></i>
+                            <span>Adena</span>
+                        </div>
+                        <input type="text" id="farmAdena" class="form-control farm-val-input" placeholder="0">
+                    </div>
+
+                    <div class="farm-input-row">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-gem tracker-item-icon text-purple"></i>
+                            <span>Ancient Adena</span>
+                        </div>
+                        <input type="text" id="farmAncientAdena" class="form-control farm-val-input" placeholder="0">
+                    </div>
+
+                    <div class="farm-input-row">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-circle-dollar-to-slot tracker-item-icon text-cyan"></i>
+                            <span>Donate Coins</span>
+                        </div>
+                        <input type="text" id="farmDonateCoins" class="form-control farm-val-input" placeholder="0">
+                    </div>
+
+                    <div class="farm-input-row">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-book tracker-item-icon text-gold"></i>
+                            <span>Giant's Codex</span>
+                        </div>
+                        <input type="text" id="farmGiantsCodex" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-cubes text-green"></i> Life Stones</h4>
+                    
+                    <div class="form-group mb-2">
+                        <label>Tipo de Life Stone</label>
+                        <select id="lsTypeSelect" class="form-control">
+                            <option value="Life Stone">Life Stone (Normal)</option>
+                            <option value="Mid-Grade Life Stone">Mid-Grade Life Stone</option>
+                            <option value="High-Grade Life Stone">High-Grade Life Stone</option>
+                            <option value="Top-Grade Life Stone">Top-Grade Life Stone</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Nivel del Life Stone</label>
+                        <select id="lsLevelSelect" class="form-control">
+                            <option value="lvl 70">Nivel 70</option>
+                            <option value="lvl 76" selected>Nivel 76</option>
+                            <option value="lvl 80">Nivel 80</option>
+                        </select>
+                    </div>
+
+                    <div class="farm-input-row mt-2">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-cubes tracker-item-icon text-green"></i>
+                            <span>Cantidad</span>
+                        </div>
+                        <input type="text" id="farmLifeStonesQty" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-scroll text-cyan"></i> Enchant Scrolls</h4>
+                    
+                    <div class="form-group mb-2">
+                        <label>Variante</label>
+                        <select id="scrollVariantSelect" class="form-control">
+                            <option value="Scroll">Normal Scroll</option>
+                            <option value="Blessed Scroll">Blessed Scroll (Bela)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Categoría</label>
+                        <select id="scrollCategorySelect" class="form-control">
+                            <option value="Weapon">Weapon (Arma)</option>
+                            <option value="Armor">Armor (Armadura)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Grado</label>
+                        <select id="scrollGradeSelect" class="form-control">
+                            <option value="Grade D">Grado D</option>
+                            <option value="Grade C">Grado C</option>
+                            <option value="Grade B">Grado B</option>
+                            <option value="Grade A" selected>Grado A</option>
+                            <option value="Grade S">Grado S</option>
+                        </select>
+                    </div>
+
+                    <div class="farm-input-row mt-2">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-scroll tracker-item-icon text-cyan"></i>
+                            <span>Cantidad</span>
+                        </div>
+                        <input type="text" id="farmScrollsQty" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-font text-purple"></i> Letras Evento (LINEAGE / GIRAN)</h4>
+                    
+                    <div class="form-group mb-2">
+                        <label>Letra Específica</label>
+                        <select id="letterSelect" class="form-control">
+                            <option value="Letra L">Letra L</option>
+                            <option value="Letra I">Letra I</option>
+                            <option value="Letra N">Letra N</option>
+                            <option value="Letra E">Letra E</option>
+                            <option value="Letra A">Letra A</option>
+                            <option value="Letra G">Letra G</option>
+                            <option value="Letra R">Letra R</option>
+                        </select>
+                    </div>
+
+                    <div class="farm-input-row mt-2">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-font tracker-item-icon text-purple"></i>
+                            <span>Cantidad</span>
+                        </div>
+                        <input type="text" id="farmLettersQty" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-heart text-cyan"></i> Corazones de Evento</h4>
+                    
+                    <div class="form-group mb-2">
+                        <label>Número de Corazón</label>
+                        <select id="heartSelect" class="form-control">
+                            <option value="Corazón 1">Corazón #1</option>
+                            <option value="Corazón 2">Corazón #2</option>
+                            <option value="Corazón 3">Corazón #3</option>
+                            <option value="Corazón 4">Corazón #4</option>
+                            <option value="Corazón 5">Corazón #5</option>
+                            <option value="Corazón 6">Corazón #6</option>
+                            <option value="Corazón 7">Corazón #7</option>
+                            <option value="Corazón 8">Corazón #8</option>
+                            <option value="Corazón 9">Corazón #9</option>
+                        </select>
+                    </div>
+
+                    <div class="farm-input-row mt-2">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-heart tracker-item-icon text-cyan"></i>
+                            <span>Cantidad</span>
+                        </div>
+                        <input type="text" id="farmHeartsQty" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="tracker-category-box mb-3">
+                    <h4 class="tracker-cat-title"><i class="fa-solid fa-feather text-gold"></i> Quest Items Interlude</h4>
+                    
+                    <div class="form-group mb-2">
+                        <label>Seleccionar Ítem de Quest</label>
+                        <select id="questItemSelect" class="form-control">
+                            <option value="Fangs of Wyrm">Fangs of Wyrm</option>
+                            <option value="Pagan Totem">Pagan Totem</option>
+                            <option value="Torch">Torch</option>
+                            <option value="Bones of Plains Dino">Bones of Plains Dino</option>
+                            <option value="Stakato Claw">Stakato Claw</option>
+                            <option value="Dagger Edge">Dagger Edge</option>
+                            <option value="Tamrin Orc Amulet">Tamrin Orc Amulet</option>
+                            <option value="Enchanted Golem Shard">Enchanted Golem Shard</option>
+                            <option value="Dion Gem">Dion Gem</option>
+                            <option value="Tyrannosaurus Claw">Tyrannosaurus Claw</option>
+                        </select>
+                    </div>
+
+                    <div class="farm-input-row mt-2">
+                        <div class="farm-item-label">
+                            <i class="fa-solid fa-feather tracker-item-icon text-gold"></i>
+                            <span>Cantidad</span>
+                        </div>
+                        <input type="text" id="farmQuestItemQty" class="form-control farm-val-input" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="window.closeModal('addFarmModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Jornada
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- MODAL ELEGANTE DE RESULTADO DE CRAFT -->

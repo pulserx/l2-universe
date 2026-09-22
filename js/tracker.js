@@ -105,13 +105,14 @@ function setupTrackerFormHandler() {
             createdAt: new Date().toISOString()
         };
 
-        // Renderizado optimista local
+        // Renderizado local optimista
         farmLogs.unshift(newLogObj);
         localStorage.setItem('l2_universe_farm_logs', JSON.stringify(farmLogs));
         renderFarmLogs();
         updateDashboardLogsCount();
 
         newForm.reset();
+        window.closeModal('addFarmModal'); // Cierra la ventana emergente automáticamente al guardar
         if (window.addNotification) window.addNotification("✅ Jornada de farmeo guardada con éxito.");
 
         if (currentUser) {
@@ -159,7 +160,7 @@ export function renderFarmLogs() {
     if (farmLogs.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">No hay registros de farmeo guardados todavía.</td>
+                <td colspan="6" class="text-center text-muted py-4">No hay registros de farmeo guardados todavía. Haz clic en "Registrar" para empezar.</td>
             </tr>
         `;
         return;
